@@ -21,7 +21,7 @@ const { planNote, renameTarget } = require('./newnote');
 const { candidates } = require('./adopt');
 const { parseFrontmatter, patchFrontmatter } = require('./frontmatter');
 const { DEFAULT_TEMPLATES, TEMPLATE_NAMES } = require('./templates');
-const { passageNoteName, passageLink, bibleHubUrl } = require('./scripture');
+const { passageNoteName, passageLink, bibleHubUrl, readerRef } = require('./scripture');
 const { KIND_KEY, KIND_IDS } = require('./constants');
 const D = require('./dates');
 
@@ -128,9 +128,19 @@ function makeStore(plugin) {
     await plugin.saveSettings();
   }
 
+  /* Open a file and bring its tab to the front. From Home, getLeaf(false)
+     picks the last note tab — opening there without revealing it would
+     leave Home on screen and the note out of sight. */
+  async function showFile(f, newTab) {
+    const ws = app.workspace;
+    const leaf = ws.getLeaf(newTab ? 'tab' : false);
+    await leaf.openFile(f, { active: true });
+    if (ws.revealLeaf) await ws.revealLeaf(leaf);
+  }
+
   async function openPath(path, newTab) {
     const f = getFile(path);
-    if (f) await app.workspace.getLeaf(newTab ? 'tab' : false).openFile(f);
+    if (f) await showFile(f, newTab);
   }
 
   /* Start a note of `kind` (or open today's). Resolves to the path. */
@@ -144,7 +154,7 @@ function makeStore(plugin) {
     await readFile(f);
     rebuild();
     plugin.focusTitleFor = f.path;
-    await app.workspace.getLeaf(false).openFile(f);
+    await showFile(f);
     return f.path;
   }
 
@@ -218,10 +228,26 @@ function makeStore(plugin) {
     return c && c.frontmatter && c.frontmatter.chapter !== undefined ? f : null;
   }
 
-  function openPassage(ref, sourcePath) {
-    if (chapterNote(ref)) return app.workspace.openLinkText(passageLink(ref), sourcePath || '', false);
+  /* Bible Search's reader, when that plugin is on and offers its api —
+     looked up per call, since it can be switched on or off at any time. */
+  function reader() {
+    const p = app.plugins && app.plugins.plugins && app.plugins.plugins['bible-search'];
+    return p && p.api && typeof p.api.openPassage === 'function' ? p.api : null;
+  }
+  const readerName = () => (reader() ? 'Bible Search' : null);
+
+  /* Where a passage opens, in order: Bible Search's reader; the vault's own
+     chapter note; BibleHub. Bible Search answering false (no search page
+     set up) or failing falls through to the next. Resolves to which one. */
+  async function openPassage(ref, sourcePath) {
+    const r = reader();
+    if (r) {
+      try { if (await r.openPassage(readerRef(ref))) return 'bible-search'; } catch (e) { console.error('bible-notes: Bible Search could not open', ref.label, e); }
+    }
+    if (chapterNote(ref)) { await app.workspace.openLinkText(passageLink(ref), sourcePath || '', false); return 'vault'; }
     /* activeWindow: the window the tap came from, popouts included. */
     (window.activeWindow || window).open(bibleHubUrl(ref, settings().translation), '_blank', 'noopener');
+    return 'biblehub';
   }
 
   /* `[[Sarah]]` when a note called Sarah exists, plain `Sarah` otherwise —
@@ -239,7 +265,7 @@ function makeStore(plugin) {
     loadAll, watch, readFile, rebuild, getFile, openPath,
     createNote, toggle, setProps, renameFromTitle, addSession,
     adoptScan, adoptApply, writeTemplatesOnce, readTemplates,
-    chapterNote, openPassage, personValue,
+    chapterNote, openPassage, readerName, personValue,
   };
 }
 

@@ -53,9 +53,12 @@ becomes a dot, because iOS and Windows don't allow colons in file names.
   `1 Sam 10:1,5-7`, `Acts 19:1,2, 19:6`, `John 1:12 (NIV)`.
 - In the body of a note a reference needs a verse, so `Romans 8 was good` stays plain text.
   In the `scripture` property, chapters (`Romans 8`) are fine too.
-- A passage opens in your own Bible notes when the vault has a chapter note named like
-  `John 15` with a `chapter` property (the layout Bible Search and similar vaults use).
-  Otherwise it opens on BibleHub in the translation you choose in settings.
+- A passage opens, in this order:
+  1. in [Bible Search](https://github.com/RuanPienaarCode/obsidian-bible-search)'s reader,
+     when that plugin (1.2.0 or later) is on in the same vault;
+  2. in your own Bible notes, when the vault has a chapter note named like `John 15` with
+     a `chapter` property (the layout Bible Search and similar vaults use);
+  3. otherwise on BibleHub, in the translation you choose in settings.
 - Bible Notes never stores or shows verse text.
 
 ## The rules it keeps with your writing

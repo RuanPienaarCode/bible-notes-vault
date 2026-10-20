@@ -301,6 +301,17 @@ function bibleHubUrl(ref, fallback) {
   return `https://biblehub.com/${linkCode(ref, fallback)}/${bookOf(ref).slug}/${ref.spans[0].c1}.htm`;
 }
 
+/* The reference in the simple form Bible Search's reader parses:
+   canonical book, one chapter, then a verse or a range within it. A list or
+   a cross-chapter range opens where it starts. */
+function readerRef(ref) {
+  const s = ref.spans[0];
+  const base = `${bookOf(ref).name} ${s.c1}`;
+  if (s.v1 === null) return base;
+  const range = ref.spans.length === 1 && s.c2 === s.c1 && s.v2 !== s.v1 ? `-${s.v2}` : '';
+  return `${base}:${s.v1}${range}`;
+}
+
 /* The chapter note a Bible-as-notes vault would hold ("John 15",
    "Psalms 23") and the link that lands on the first verse. */
 function passageNoteName(ref) {
@@ -319,4 +330,4 @@ function parseProperty(value) {
   return list.map(v => String(v)).filter(v => v.trim()).map(raw => ({ raw, refs: parseRefs(raw, { prose: false }) }));
 }
 
-module.exports = { BOOKS, parseRefs, parseProperty, chapterKeys, chapters, bibleHubUrl, linkTranslation, passageNoteName, passageLink, formatSpans };
+module.exports = { BOOKS, parseRefs, parseProperty, chapterKeys, chapters, bibleHubUrl, linkTranslation, readerRef, passageNoteName, passageLink, formatSpans };

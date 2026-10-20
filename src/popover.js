@@ -30,16 +30,20 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
 
   const head = el(pop, 'div', 'bn-pop-head');
   el(head, 'strong', null, ref.label);
-  const inVault = store.chapterNote(ref);
-  /* The badge names what the link opens: the reference's own translation
-     when BibleHub has it, otherwise the chosen one. A vault chapter note
-     opens in the vault's own text, so the reference keeps its tag. */
-  el(head, 'span', 'bn-pill', inVault ? (ref.translation || '').toUpperCase() || 'Your Bible' : linkTranslation(ref, plugin.settings.translation));
+  /* Where it will open, in the store's order: Bible Search's reader, the
+     vault's own chapter note, BibleHub. The badge names the translation only
+     where Bible Notes chooses it (BibleHub); the reader and a chapter note
+     open in their own text, so there it shows the reference's own tag, if
+     it has one. */
+  const reader = store.readerName();
+  const inVault = !reader && store.chapterNote(ref);
+  const badge = reader || inVault ? (ref.translation || '').toUpperCase() : linkTranslation(ref, plugin.settings.translation);
+  if (badge) el(head, 'span', 'bn-pill', badge);
   const go = el(pop, 'button', 'bn-pop-row');
   go.type = 'button';
   icon(go, 'book-open');
-  el(go, 'span', 'bn-grow', inVault ? `Open ${passageNoteName(ref)}` : 'Open in BibleHub');
-  if (!inVault) icon(go, 'external-link', 'bn-dim');
+  el(go, 'span', 'bn-grow', reader ? `Open in ${reader}` : (inVault ? `Open ${passageNoteName(ref)}` : 'Open in BibleHub'));
+  if (!reader && !inVault) icon(go, 'external-link', 'bn-dim');
   go.addEventListener('click', () => { closePopover(); store.openPassage(ref, sourcePath); });
 
   el(pop, 'div', 'bn-pop-rule');

@@ -130,6 +130,19 @@ assert.strictEqual(one('1 Samual 22:1-7').label, '1 Samuel 22:1–7');
   assert.deepStrictEqual(S.chapterKeys(ps), ['Psalm 23'], 'labels and index keys use the singular');
 }
 
+/* What Bible Search's reader is handed: its own simple form — canonical
+   book, one chapter, a verse or a plain range — whatever was typed. Lists
+   and cross-chapter ranges come down to where they start. */
+{
+  assert.strictEqual(S.readerRef(one('John 15:5')), 'John 15:5');
+  assert.strictEqual(S.readerRef(one('Jn 15:1–8')), 'John 15:1-8');
+  assert.strictEqual(S.readerRef(one('Ps 23:1')), 'Psalms 23:1');
+  assert.strictEqual(S.readerRef(one('1 Sam 10:1,5-7')), '1 Samuel 10:1');
+  assert.strictEqual(S.readerRef(one('John 15:1–16:4')), 'John 15:1');
+  assert.strictEqual(S.readerRef(one('Romans 8', { prose: false })), 'Romans 8');
+  assert.strictEqual(S.readerRef(one('Song of Solomon 2:4')), 'Song of Songs 2:4');
+}
+
 /* A reference that names its own translation opens in it — when BibleHub
    has that translation; otherwise the chosen one. */
 {

@@ -151,8 +151,28 @@ class Covers {
     });
     requestAnimationFrame(grow);
     if (this.plugin.focusTitleFor === note.path) {
-      this.plugin.focusTitleFor = null;
-      setTimeout(() => { title.focus(); title.select(); }, 30);
+      /* A new note: put the cursor in its title. The band exists in both the
+         editing and the (hidden) reading container, and a just-opened leaf
+         may not be laid out yet — so keep trying for about a second, only
+         while this title is actually visible, and stop the moment one takes
+         focus or the writer is already typing in the note. */
+      let tries = 0;
+      const plugin = this.plugin;
+      const tick = () => {
+        if (plugin.focusTitleFor !== note.path || !title.isConnected) return;
+        /* Out of tries: let the flag go, so a later redraw never grabs focus. */
+        if (tries++ > 20) { plugin.focusTitleFor = null; return; }
+        /* Obsidian focuses the editor itself as a note opens; only after
+           that first moment does focus in the text mean someone is typing. */
+        const a = document.activeElement;
+        if (tries > 6 && a && a.closest && a.closest('.cm-content')) { plugin.focusTitleFor = null; return; }
+        if (title.offsetParent !== null) {
+          title.focus();
+          if (document.activeElement === title) { title.select(); plugin.focusTitleFor = null; return; }
+        }
+        setTimeout(tick, 50);
+      };
+      setTimeout(tick, 30);
     }
 
     const props = el(inner, 'div', 'bn-props');
