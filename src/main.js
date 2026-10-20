@@ -28,9 +28,9 @@ class BibleNotesPlugin extends Plugin {
 
     this.registerView(VIEW_TYPE, leaf => new HomeView(leaf, this));
     this.addRibbonIcon('book-open', 'Open Bible Notes', () => this.activateHome());
-    this.addCommand({ id: 'open-home', name: 'Open Home', callback: () => this.activateHome() });
+    this.addCommand({ id: 'open-home', name: 'Open home', callback: () => this.activateHome() });
     for (const k of KINDS) {
-      this.addCommand({ id: `new-${k.id}`, name: `New ${k.label.toLowerCase()} note`, callback: () => this.store.createNote(k.id) });
+      this.addCommand({ id: `new-${k.id}`, name: k.command, callback: () => this.store.createNote(k.id) });
     }
     this.addCommand({
       id: 'add-session',

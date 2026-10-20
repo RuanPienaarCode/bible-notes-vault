@@ -124,10 +124,12 @@ class Covers {
        whenever its width changes. */
     const grow = () => {
       if (!title.isConnected || !title.clientWidth) return;
-      const before = title.style.height;
-      title.style.height = 'auto';
-      title.style.height = `${title.scrollHeight}px`;
-      if (title.style.height !== before) remeasure(view);
+      /* Through a CSS variable (styles.css sets the height from it). */
+      const before = title.style.getPropertyValue('--bn-title-h');
+      title.style.setProperty('--bn-title-h', 'auto');
+      const next = `${title.scrollHeight}px`;
+      title.style.setProperty('--bn-title-h', next);
+      if (next !== before) remeasure(view);
     };
     title.addEventListener('input', grow);
     if (typeof ResizeObserver !== 'undefined') {

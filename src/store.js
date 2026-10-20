@@ -3,6 +3,13 @@
    the Vault API only (desktop and iOS). Writes go through vault.process with
    the pure text functions in writes.js, so a body is never rebuilt.
 
+   Frontmatter is patched as text (frontmatter.js, vendored from Rhythm with
+   its tests) rather than through FileManager.processFrontMatter, on purpose:
+   processFrontMatter re-serialises the whole block, which drops YAML
+   comments and rewrites the quoting and list style of keys the user wrote by
+   hand. Patching changes only the key being set and leaves every other line
+   byte for byte.
+
    The store keeps one note per Bible Notes file and rebuilds the index
    (cheap, pure) whenever one changes; views subscribe to it. */
 
@@ -131,8 +138,9 @@ function makeStore(plugin) {
     const today = D.todayISO();
     const plan = planNote(kind, today, { index, settings: settings(), exists: existsProbe(), templates: await readTemplates() });
     if (plan.open) { await openPath(plan.open); return plan.open; }
-    await ensureFolder(plan.create.slice(0, plan.create.lastIndexOf('/')));
-    const f = await v.create(plan.create, plan.text);
+    const target = normalizePath(plan.create);
+    await ensureFolder(target.slice(0, target.lastIndexOf('/')));
+    const f = await v.create(target, plan.text);
     await readFile(f);
     rebuild();
     plugin.focusTitleFor = f.path;
@@ -164,8 +172,9 @@ function makeStore(plugin) {
     const note = notes.get(path);
     const f = getFile(path);
     if (!note || !f) return path;
-    const target = renameTarget(note, title, existsProbe());
-    if (!target) return path;
+    const planned = renameTarget(note, title, existsProbe());
+    if (!planned) return path;
+    const target = normalizePath(planned);
     await app.fileManager.renameFile(f, target);
     return target;
   }
@@ -211,7 +220,8 @@ function makeStore(plugin) {
 
   function openPassage(ref, sourcePath) {
     if (chapterNote(ref)) return app.workspace.openLinkText(passageLink(ref), sourcePath || '', false);
-    window.open(bibleHubUrl(ref, settings().translation), '_blank');
+    /* activeWindow: the window the tap came from, popouts included. */
+    (window.activeWindow || window).open(bibleHubUrl(ref, settings().translation), '_blank', 'noopener');
   }
 
   /* `[[Sarah]]` when a note called Sarah exists, plain `Sarah` otherwise —

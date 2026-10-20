@@ -5,12 +5,13 @@ const KIND_KEY = 'bible-notes';
 const VIEW_TYPE = 'bible-notes-home';
 
 /* The four kinds, in Start-row order. `emoji` is the Notion-pure page icon;
-   `label` names an untitled note and the button. */
+   `label` names an untitled note and the button; `command` is spelled out
+   because "Sunday" keeps its capital in sentence case and the others don't. */
 const KINDS = [
-  { id: 'sunday', label: 'Sunday', button: 'Sunday note', emoji: '⛪', tone: 'orange' },
-  { id: 'community', label: 'Community', button: 'Community', emoji: '🤝', tone: 'blue' },
-  { id: 'meditation', label: 'Meditation', button: 'Meditation', emoji: '🌅', tone: 'green' },
-  { id: 'study', label: 'Study', button: 'Study', emoji: '📖', tone: 'purple' },
+  { id: 'sunday', label: 'Sunday', button: 'Sunday note', command: 'New Sunday note', emoji: '⛪', tone: 'orange' },
+  { id: 'community', label: 'Community', button: 'Community', command: 'New community note', emoji: '🤝', tone: 'blue' },
+  { id: 'meditation', label: 'Meditation', button: 'Meditation', command: 'New meditation note', emoji: '🌅', tone: 'green' },
+  { id: 'study', label: 'Study', button: 'Study', command: 'New study note', emoji: '📖', tone: 'purple' },
 ];
 const KIND_IDS = KINDS.map(k => k.id);
 const kindOf = id => KINDS.find(k => k.id === id) || null;

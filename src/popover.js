@@ -69,12 +69,13 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   const vw = window.innerWidth;
   const top0 = vv ? vv.offsetTop : 0;
   const vh = vv ? vv.height + vv.offsetTop : window.innerHeight;
+  /* The computed box goes in as CSS variables; styles.css places it. */
   const w = Math.min(WIDTH, vw - 16);
-  pop.style.width = `${w}px`;
-  pop.style.left = `${Math.max(8, Math.min(rect.left, vw - w - 8))}px`;
+  pop.style.setProperty('--bn-pop-w', `${w}px`);
+  pop.style.setProperty('--bn-pop-x', `${Math.max(8, Math.min(rect.left, vw - w - 8))}px`);
   const h = pop.offsetHeight;
   const below = rect.bottom + 6;
-  pop.style.top = `${below + h > vh - 8 && rect.top - h - 6 > top0 + 8 ? rect.top - h - 6 : Math.min(below, Math.max(top0 + 8, vh - h - 8))}px`;
+  pop.style.setProperty('--bn-pop-y', `${below + h > vh - 8 && rect.top - h - 6 > top0 + 8 ? rect.top - h - 6 : Math.min(below, Math.max(top0 + 8, vh - h - 8))}px`);
   /* Take focus only when the chip was opened from the keyboard. From a tap
      in the editor, moving focus would drop the phone's keyboard and lose the
      writer's place. */

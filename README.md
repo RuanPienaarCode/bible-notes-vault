@@ -71,7 +71,7 @@ It never rewrites what you wrote.
 
 ## Commands
 
-- *Open Home* (also the book icon in the ribbon)
+- *Open home* (also the book icon in the ribbon)
 - *New Sunday note*, *New community note*, *New meditation note*, *New study note*
 - *Add a study session*
 - *Show or hide raw properties*
@@ -80,13 +80,15 @@ It never rewrites what you wrote.
 ## Settings
 
 The folder for each kind's new notes, the template folder, the BibleHub translation, whether
-passage chips appear in every note or only in Bible Notes notes, and the church a first
-Sunday note starts with.
+passage chips appear in every note or only in Bible Notes notes, and the church a Sunday
+note uses when the last one has none.
 
 ## Privacy
 
 Everything stays in your vault. There is no account, no telemetry and no network request,
-except opening a BibleHub page in your browser when you tap a passage.
+except opening a BibleHub page in your browser when you tap a passage. That link carries
+only the translation, book and chapter (for example `biblehub.com/niv/john/15.htm`) —
+nothing from your notes.
 
 ## Development
 

@@ -184,6 +184,7 @@ body.theme-dark {
   display: block; width: 100%; margin: 14px 0 12px; padding: 0; border: 0; background: none; box-shadow: none; resize: none;
   overflow: hidden; color: var(--inline-title-color, var(--text-normal)); font-family: var(--inline-title-font, inherit);
   font-size: 2em; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; min-height: 1.15em;
+  height: var(--bn-title-h, auto);
 }
 .bn-cover .bn-title:focus { outline: none; box-shadow: none; }
 .bn-cover .bn-title::placeholder { color: var(--text-faint); }
@@ -232,6 +233,7 @@ body.theme-dark {
 /* -------------------------------------------------------------- Popover --- */
 .bn-popover {
   position: fixed; z-index: var(--layer-popover, 30); box-sizing: border-box; padding: 6px;
+  width: var(--bn-pop-w, 264px); left: var(--bn-pop-x, 8px); top: var(--bn-pop-y, 8px);
   background: var(--background-primary); color: var(--text-normal); border: 1px solid var(--background-modifier-border);
   border-radius: var(--bn-radius); box-shadow: var(--shadow-l, 0 9px 24px rgba(15, 15, 15, 0.2)); font-size: 14px; line-height: 1.4;
 }

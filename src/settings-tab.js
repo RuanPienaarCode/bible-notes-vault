@@ -3,8 +3,16 @@
    BibleHub translation, the church a Sunday note starts with, and where
    passage chips appear. */
 
-const { PluginSettingTab, Setting } = require('obsidian');
+const { PluginSettingTab, Setting, normalizePath } = require('obsidian');
 const { KINDS } = require('./constants');
+
+/* A typed folder, normalised — but empty stays empty (normalizePath('')
+   would be '/', the vault root). */
+const folderPath = v => {
+  const p = String(v || '').trim();
+  const n = p ? normalizePath(p) : '';
+  return n === '/' ? '' : n;
+};
 
 const TRANSLATIONS = [
   ['niv', 'NIV'], ['esv', 'ESV'], ['nlt', 'NLT'], ['csb', 'CSB'], ['bsb', 'BSB'],
@@ -28,12 +36,12 @@ class BibleNotesSettingTab extends PluginSettingTab {
       new Setting(containerEl)
         .setName(`${k.label} notes`)
         .setDesc(`New ${k.label.toLowerCase()} notes are created here. Notes are found by their property, so moving one never breaks it.`)
-        .addText(t => t.setValue(s.folders[k.id]).onChange(async v => { s.folders[k.id] = v.trim().replace(/^\/+|\/+$/g, ''); await save(); }));
+        .addText(t => t.setValue(s.folders[k.id]).onChange(async v => { s.folders[k.id] = folderPath(v); await save(); }));
     }
     new Setting(containerEl)
       .setName('Template folder')
       .setDesc('Sunday.md, Community.md, Meditation.md and Study.md here shape each new note. Edit them like any note.')
-      .addText(t => t.setValue(s.templateFolder).onChange(async v => { s.templateFolder = v.trim().replace(/^\/+|\/+$/g, '') || 'Templates/Bible Notes'; await save(); }));
+      .addText(t => t.setValue(s.templateFolder).onChange(async v => { s.templateFolder = folderPath(v) || 'Templates/Bible Notes'; await save(); }));
 
     new Setting(containerEl).setName('Scripture').setHeading();
     new Setting(containerEl)
