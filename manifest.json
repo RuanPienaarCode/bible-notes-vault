@@ -1,0 +1,9 @@
+{
+  "id": "bible-notes",
+  "name": "Bible Notes",
+  "version": "0.1.0",
+  "minAppVersion": "1.8.0",
+  "description": "Sunday, community, morning meditation and Bible study notes you come back to and build on. Scripture becomes a thread, open items carry forward, prayers are remembered.",
+  "author": "Ruan Pienaar",
+  "isDesktopOnly": false
+}

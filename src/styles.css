@@ -1,0 +1,275 @@
+/* ============================================================================
+   Bible Notes — Notion-pure, with Editorial's answered-prayer moment and
+   passage index. Ground, text and borders come from the theme's own
+   variables, so the page sits inside any Obsidian theme; the tag tints are
+   Notion's, in light and dark. Every class is prefixed bn-.
+   ============================================================================ */
+
+body {
+  --bn-orange-bg: #fbecdd; --bn-orange: #8a4a12;
+  --bn-green-bg: #dbeddb;  --bn-green: #2b593f;
+  --bn-blue-bg: #d3e5ef;   --bn-blue: #1f4f6e;
+  --bn-purple-bg: #e8deee; --bn-purple: #5a3a73;
+  --bn-chip-bg: rgba(55, 53, 47, 0.08);
+  --bn-band-sunday: #f3eee7; --bn-band-community: #e9eff3; --bn-band-meditation: #edf3ec; --bn-band-study: #f0ecf3;
+  --bn-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --bn-radius: 8px;
+}
+body.theme-dark {
+  --bn-orange-bg: #5c3b23; --bn-orange: #f3cfb0;
+  --bn-green-bg: #2b4232;  --bn-green: #bfe0c6;
+  --bn-blue-bg: #28456c;   --bn-blue: #c4dcf2;
+  --bn-purple-bg: #492f64; --bn-purple: #e0cdf0;
+  --bn-chip-bg: rgba(255, 255, 255, 0.08);
+  --bn-band-sunday: #2a2621; --bn-band-community: #212830; --bn-band-meditation: #222a23; --bn-band-study: #29232e;
+}
+
+.tone-orange { background: var(--bn-orange-bg); color: var(--bn-orange); }
+.tone-green  { background: var(--bn-green-bg);  color: var(--bn-green); }
+.tone-blue   { background: var(--bn-blue-bg);   color: var(--bn-blue); }
+.tone-purple { background: var(--bn-purple-bg); color: var(--bn-purple); }
+
+.bn-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.bn-icon svg { width: 16px; height: 16px; }
+.bn-grow { flex: 1 1 auto; min-width: 0; }
+.bn-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bn-dim { color: var(--text-muted); font-size: 12.5px; }
+
+/* Buttons that are rows, chips or links: Obsidian's own button chrome off. */
+.bn-home .bn-row, .bn-home .bn-lead, .bn-home .bn-kind, .bn-home .bn-more, .bn-home .bn-index-ch,
+.bn-home .bn-answered, .bn-home .bn-task-meta,
+.bn-cover .bn-prop-btn, .bn-cover .bn-link, .bn-cover .bn-carry, .bn-cover .bn-chip, .bn-cover .bn-prop-edit,
+.bn-cover .bn-task-meta, .bn-popover .bn-pop-row, .bn-adopt-card .bn-btn-quiet, .bn-modal-actions .bn-btn-quiet {
+  font: inherit; color: inherit; background: none; box-shadow: none; border: 0; height: auto;
+  padding: 0; margin: 0; text-align: left; cursor: pointer; border-radius: 6px; -webkit-tap-highlight-color: transparent;
+}
+.bn-home button:focus-visible, .bn-cover button:focus-visible, .bn-popover button:focus-visible, .bn-ref:focus-visible {
+  outline: 2px solid var(--interactive-accent); outline-offset: 1px;
+}
+
+.bn-pill {
+  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 7px; border-radius: 4px;
+  font-size: 12.5px; line-height: 1; white-space: nowrap; background: var(--bn-chip-bg); color: var(--text-muted);
+}
+.bn-pill.tone-blue { background: var(--bn-blue-bg); color: var(--bn-blue); }
+.bn-pill.tone-purple { background: var(--bn-purple-bg); color: var(--bn-purple); }
+.bn-pill-bad { background: none; color: var(--text-faint); box-shadow: inset 0 0 0 1px var(--background-modifier-border); text-decoration: underline dotted; }
+
+/* ---------------------------------------------------------------- Home --- */
+.workspace-leaf-content .view-content.bn-home-view { padding: 0; }
+.bn-home {
+  box-sizing: border-box; max-width: 1000px; margin: 0 auto; padding: 40px 22px 72px;
+  display: flex; flex-direction: column; gap: 32px; color: var(--text-normal); font-size: 15px; line-height: 1.4;
+}
+.bn-home-head { display: flex; flex-direction: column; gap: 4px; }
+.bn-page-icon { font-size: 44px; line-height: 1; }
+.bn-home .bn-h1 { margin: 14px 0 0; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.15; }
+.bn-today { margin: 0; font-size: 15px; }
+
+.bn-sec { display: flex; flex-direction: column; }
+.bn-sec-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.bn-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; color: var(--text-muted); }
+.bn-count { font-size: 12px; color: var(--text-muted); }
+
+.bn-start { gap: 10px; }
+.bn-start .bn-sec-head { margin-bottom: 0; }
+.bn-home .bn-lead {
+  display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--bn-radius); width: 100%;
+  transition: filter 120ms ease;
+}
+.bn-home .bn-lead.tone-orange { background: var(--bn-orange-bg); color: var(--bn-orange); }
+.bn-home .bn-lead.tone-green { background: var(--bn-green-bg); color: var(--bn-green); }
+.bn-home .bn-lead.tone-blue { background: var(--bn-blue-bg); color: var(--bn-blue); }
+.bn-home .bn-lead.tone-purple { background: var(--bn-purple-bg); color: var(--bn-purple); }
+.bn-home .bn-lead:hover { filter: brightness(0.97); }
+.bn-lead-emoji { font-size: 24px; line-height: 1; }
+.bn-lead-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.bn-lead-text strong { font-size: 15px; font-weight: 600; }
+.bn-lead-sub { font-size: 13px; }
+.bn-kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.bn-kinds.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.bn-home .bn-kind {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 72px; padding: 12px;
+  border: 1px solid var(--background-modifier-border); border-radius: var(--bn-radius); box-sizing: border-box;
+}
+.bn-home .bn-kind:hover { background: var(--background-modifier-hover); }
+.bn-kind-emoji { font-size: 20px; line-height: 1; }
+.bn-kind-label { font-size: 14px; font-weight: 500; }
+
+.bn-cols { display: flex; flex-direction: column; gap: 32px; }
+.bn-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.bn-home.bn-wide .bn-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; }
+.bn-home.bn-wide .bn-kinds { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.bn-home.bn-wide .bn-kinds.is-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.bn-home.bn-wide { padding-top: 56px; }
+.bn-home.bn-wide .bn-h1 { font-size: 38px; }
+
+.bn-home .bn-row, .bn-cover .bn-row {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 8px; margin: 0 -8px;
+  width: calc(100% + 16px); box-sizing: border-box;
+}
+.bn-home .bn-row:hover, .bn-cover .bn-row:hover { background: var(--background-modifier-hover); }
+.bn-row-emoji { width: 22px; text-align: center; font-size: 16px; flex: none; }
+.bn-date { min-width: 34px; text-align: right; }
+.bn-task { cursor: pointer; }
+.bn-task .bn-check { margin: 0; flex: none; }
+.bn-task-text { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 9px 0; min-width: 0; }
+.bn-task-title { font-size: 15px; }
+.bn-home .bn-task-meta, .bn-cover .bn-task-meta { align-self: flex-start; font-size: 12.5px; color: var(--text-muted); border-radius: 3px; }
+.bn-task-meta:hover { color: var(--text-normal); text-decoration: underline; text-underline-offset: 2px; }
+.bn-meta-emoji { display: inline-block; margin-right: 5px; font-size: 12px; text-decoration: none; }
+.bn-task.is-done .bn-task-title { color: var(--text-muted); text-decoration: line-through; }
+.bn-home .bn-more { align-self: flex-start; margin-top: 4px; min-height: 32px; padding: 0 2px; font-size: 13px; color: var(--text-muted); }
+.bn-home .bn-more:hover { color: var(--text-normal); }
+
+/* The answered moment — borrowed from the Editorial direction. */
+.bn-home .bn-answered {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; width: 100%;
+  margin-top: 12px; padding: 22px 18px; border-radius: var(--bn-radius); background: var(--bn-green-bg); color: var(--bn-green);
+}
+.bn-home .bn-answered.is-new { animation: bn-rise 420ms ease-out; }
+.bn-answered-orn { font-family: var(--bn-serif); font-size: 22px; line-height: 1; }
+.bn-answered-text { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.bn-answered-kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+.bn-answered-title { font-family: var(--bn-serif); font-style: italic; font-size: 20px; line-height: 1.3; color: var(--text-normal); }
+.bn-answered-sub { font-size: 12.5px; }
+@keyframes bn-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .bn-home .bn-answered.is-new { animation: none; } }
+.bn-answered-list { display: flex; flex-direction: column; }
+.bn-answered-mark { width: 22px; text-align: center; color: var(--bn-green); }
+
+/* Index of passages — also from Editorial: book, then chapters with counts. */
+.bn-index-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: baseline; min-height: 36px; font-size: 15px; }
+.bn-index-book { color: var(--text-normal); }
+.bn-index-chs { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.bn-home .bn-index-ch {
+  display: inline-flex; align-items: baseline; min-height: 32px; min-width: 32px; padding: 0 6px; justify-content: center;
+  color: var(--bn-blue); font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.bn-home .bn-index-ch:hover { background: var(--bn-blue-bg); }
+.bn-home .bn-index-ch.is-open { background: var(--bn-blue-bg); }
+.bn-index-ch sup { font-size: 10px; margin-left: 1px; color: var(--text-muted); font-weight: 400; }
+.bn-index-notes { margin: 2px 0 10px 120px; padding-left: 14px; border-left: 2px solid var(--bn-blue-bg); }
+
+.bn-series-left { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
+.bn-series-name { font-size: 15px; font-weight: 500; }
+.bn-series-bars { display: flex; gap: 4px; }
+.bn-series-bar { width: 26px; height: 4px; border-radius: 2px; background: var(--bn-purple); opacity: 0.85; }
+.bn-series-bar.is-today { opacity: 1; box-shadow: 0 0 0 2px var(--bn-purple-bg); }
+
+.bn-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 30px 12px 4px; }
+.bn-empty-icon { color: var(--text-faint); }
+.bn-empty-icon svg { width: 40px; height: 40px; stroke-width: 1.4; }
+.bn-empty h2 { margin: 6px 0 0; font-size: 17px; font-weight: 600; }
+.bn-empty p { margin: 0; max-width: 300px; font-size: 14.5px; line-height: 1.5; color: var(--text-muted); }
+.bn-adopt-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--background-modifier-border); border-radius: var(--bn-radius); }
+.bn-adopt-head { display: flex; gap: 10px; align-items: flex-start; }
+.bn-adopt-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.bn-adopt-head p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-muted); }
+.bn-adopt-actions, .bn-modal-actions { display: flex; gap: 8px; align-items: center; }
+.bn-adopt-actions { padding-left: 28px; }
+.bn-adopt-card .bn-btn-quiet, .bn-modal-actions .bn-btn-quiet { min-height: 36px; padding: 0 12px; color: var(--text-muted); }
+
+/* --------------------------------------------------------- Cover band --- */
+.bn-note:not(.bn-raw) .inline-title,
+.bn-note:not(.bn-raw) .metadata-container { display: none; }
+.bn-cover { margin: 0 0 18px; color: var(--text-normal); font-size: var(--font-text-size, 16px); line-height: 1.4; }
+.bn-cover-band { height: 104px; border-radius: var(--bn-radius); background: var(--bn-band-sunday); }
+.bn-cover.kind-community .bn-cover-band { background: var(--bn-band-community); }
+.bn-cover.kind-meditation .bn-cover-band { background: var(--bn-band-meditation); }
+.bn-cover.kind-study .bn-cover-band { background: var(--bn-band-study); }
+.bn-cover-inner { display: flex; flex-direction: column; padding: 0 4px; }
+.bn-cover-icon { font-size: 58px; line-height: 1; margin-top: -34px; margin-left: 2px; }
+.bn-cover .bn-title {
+  display: block; width: 100%; margin: 14px 0 12px; padding: 0; border: 0; background: none; box-shadow: none; resize: none;
+  overflow: hidden; color: var(--inline-title-color, var(--text-normal)); font-family: var(--inline-title-font, inherit);
+  font-size: 2em; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; min-height: 1.15em;
+}
+.bn-cover .bn-title:focus { outline: none; box-shadow: none; }
+.bn-cover .bn-title::placeholder { color: var(--text-faint); }
+.bn-props { display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 8px; font-size: 14px; }
+.bn-cover-tools, .bn-cover .bn-carry, .bn-carry-list { font-size: 14px; }
+.bn-prop-label { display: flex; align-items: center; min-height: 34px; color: var(--text-muted); font-size: 14px; }
+.bn-prop-value { display: flex; align-items: center; min-height: 34px; min-width: 0; }
+.bn-cover .bn-prop-btn {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 34px; padding: 0 6px; margin-left: -6px;
+  border-radius: 4px; font-size: 14px; color: var(--text-normal); max-width: 100%;
+}
+.bn-cover .bn-prop-btn:hover { background: var(--background-modifier-hover); }
+.bn-cover .bn-prop-btn.is-empty { color: var(--text-faint); }
+.bn-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 0; }
+.bn-cover .bn-chip { display: inline-flex; padding: 0 7px; border-radius: 4px; background: var(--bn-blue-bg); color: var(--bn-blue); font-size: 13px; height: 24px; align-items: center; }
+.bn-cover .bn-chip:hover { box-shadow: 0 0 0 1px var(--bn-blue); }
+.bn-cover .bn-prop-edit { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: var(--text-faint); }
+.bn-cover .bn-prop-edit:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.bn-cover .bn-prop-edit svg { width: 14px; height: 14px; }
+/* Scoped above Obsidian's own input[type=…] and :hover rules, with the box
+   set explicitly so the host's field styling can't repaint it. */
+.bn-cover input.bn-prop-input, .bn-cover input.bn-prop-input:hover, .bn-cover input.bn-prop-input:focus {
+  width: 100%; max-width: 360px; height: 32px; padding: 0 8px; font-size: 14px; color: var(--text-normal);
+  background: var(--background-primary); border: 1px solid var(--background-modifier-border-focus, var(--interactive-accent));
+  border-radius: 4px; box-shadow: none;
+}
+.bn-cover-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 6px; }
+.bn-cover .bn-link { font-size: 12.5px; color: var(--text-muted); min-height: 28px; }
+.bn-cover .bn-link:hover { color: var(--text-normal); }
+.bn-cover .bn-carry {
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 18px; min-height: 44px; padding: 0 12px;
+  border-radius: 6px; background: var(--background-secondary); font-size: 14px; box-sizing: border-box;
+}
+.bn-cover .bn-carry:hover { background: var(--background-modifier-hover); }
+.bn-carry-from { max-width: 45%; }
+.bn-carry-list { display: flex; flex-direction: column; padding: 4px 12px 0; }
+.bn-carry-more { margin: 4px 0 0; }
+
+/* --------------------------------------------------- Chips in the text --- */
+.bn-ref, .markdown-rendered a.bn-ref {
+  color: var(--bn-blue); background: var(--bn-blue-bg); border-radius: 4px; padding: 0 3px;
+  text-decoration: none; cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.bn-ref:hover, .markdown-rendered a.bn-ref:hover { box-shadow: 0 0 0 1px var(--bn-blue); text-decoration: none; }
+
+/* -------------------------------------------------------------- Popover --- */
+.bn-popover {
+  position: fixed; z-index: var(--layer-popover, 30); box-sizing: border-box; padding: 6px;
+  background: var(--background-primary); color: var(--text-normal); border: 1px solid var(--background-modifier-border);
+  border-radius: var(--bn-radius); box-shadow: var(--shadow-l, 0 9px 24px rgba(15, 15, 15, 0.2)); font-size: 14px; line-height: 1.4;
+}
+.bn-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px 8px; }
+.bn-pop-head strong { font-weight: 600; }
+.bn-popover .bn-pop-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 0 10px; border-radius: 4px; }
+.bn-popover .bn-pop-row:hover { background: var(--background-modifier-hover); }
+.bn-pop-rule { height: 1px; margin: 4px; background: var(--background-modifier-border); }
+.bn-pop-label { padding: 6px 10px 2px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.bn-pop-empty { margin: 4px 10px 8px; font-size: 13px; color: var(--text-muted); }
+
+/* --------------------------------------------------------- Adopt modal --- */
+.bn-adopt-modal .bn-modal-title { margin-top: 0; }
+.bn-adopt-list { display: flex; flex-direction: column; max-height: 50vh; overflow-y: auto; margin: 12px 0 16px; border-top: 1px solid var(--background-modifier-border); }
+.bn-adopt-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.bn-adopt-main { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; cursor: pointer; }
+.bn-adopt-text { display: flex; flex-direction: column; min-width: 0; }
+.bn-adopt-name { font-weight: 500; }
+.bn-adopt-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bn-modal-actions { justify-content: flex-end; }
+
+/* ---------------------------------------------------------------- Phone --- */
+/* Obsidian marks its phone and tablet apps with .is-mobile: every tap target
+   44px, and inputs at 16px so iOS doesn't zoom the page when one takes focus. */
+.is-mobile .bn-prop-label, .is-mobile .bn-prop-value, .is-mobile .bn-cover .bn-prop-btn,
+.is-mobile .bn-cover .bn-link, .is-mobile .bn-popover .bn-pop-row, .is-mobile .bn-home .bn-index-ch { min-height: 44px; }
+.is-mobile .bn-cover .bn-prop-edit { width: 44px; height: 44px; }
+.is-mobile .bn-cover .bn-chip { height: 32px; padding: 0 10px; }
+.is-mobile .bn-home .bn-index-ch { min-width: 44px; }
+.is-mobile .bn-cover input.bn-prop-input { height: 40px; font-size: 16px; }
+.is-mobile .bn-cover .bn-title { font-size: 1.75em; }
+
+@media (max-width: 480px) {
+  .bn-home { padding: 28px 16px 64px; }
+  .bn-props { grid-template-columns: 96px minmax(0, 1fr); }
+  .bn-cover-band { height: 88px; }
+  .bn-cover-icon { font-size: 52px; margin-top: -30px; }
+  .bn-index-row { grid-template-columns: 96px minmax(0, 1fr); }
+  .bn-index-notes { margin-left: 0; }
+  .bn-carry-from { display: none; }
+}

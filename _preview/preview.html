@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bible Notes — preview</title>
+<!-- Obsidian's REAL app.css first, exactly as the app loads it, so host
+     cascade bugs reproduce here (extract-obsidian-css.sh; gitignored). -->
+<link rel="stylesheet" href="obsidian-app.css">
+<script>document.write('<link rel="stylesheet" href="bible-notes.css?t=' + Date.now() + '">');</script>
+<style>
+  html { font-size: 16px; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--background-secondary); }
+  #devbar { position: sticky; top: 0; z-index: 50; display: flex; gap: 8px; align-items: center; padding: 6px 10px; background: #14171b; color: #cdd3dc; font: 12px -apple-system, system-ui, sans-serif; }
+  #devbar a { color: #9fd3ff; }
+  .panes { display: flex; gap: 16px; padding: 16px; align-items: flex-start; }
+  .pane { background: var(--background-primary); border-radius: 12px; box-shadow: 0 6px 30px rgba(0,0,0,.15); overflow: auto; height: calc(100vh - 70px); }
+  .pane.phone { width: 390px; flex: none; }
+  .pane.wide { flex: 1; min-width: 0; }
+  /* As in the app: the leaf fills the pane and .view-content is the scroller. */
+  .pane.phone { overflow: hidden; }
+  .pane .workspace-leaf, .pane.phone .workspace-leaf-content { height: 100%; }
+  .pane.phone .view-content { height: 100%; overflow-y: auto; }
+  body.narrow .pane.wide { display: none; }
+  body.desk .pane.phone { width: 1000px; }
+  .stub-notice { position: fixed; top: 46px; right: 12px; background: #222; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 13px; z-index: 60; }
+  .stub-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 40; }
+  .stub-modal { position: fixed; top: 8vh; left: 50%; transform: translateX(-50%); width: min(560px, 94vw); max-height: 84vh; overflow: auto; background: var(--background-primary); color: var(--text-normal); border-radius: 12px; padding: 20px; z-index: 41; box-shadow: 0 16px 60px rgba(0,0,0,.3); }
+</style>
+</head>
+<body>
+<div id="devbar">
+  <b>Bible Notes · preview</b>
+  <a href="?">full</a> <a href="?empty=1">first run</a> <a href="?theme=dark">dark</a>
+  <a href="?now=2026-10-27T15:00">Tuesday afternoon</a>
+  <button type="button" onclick="document.body.classList.toggle('desk')">Home width</button>
+</div>
+<div class="panes">
+  <div class="pane phone"><div class="workspace-leaf"><div class="workspace-leaf-content" data-type="bible-notes-home"><div class="view-content bn-home-view" id="home"></div></div></div></div>
+  <div class="pane wide" id="note"></div>
+</div>
+<script src="bundle.js"></script>
+</body>
+</html>
