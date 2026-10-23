@@ -1,20 +1,20 @@
 # Bible Notes
 
 Sunday, community, morning meditation and Bible study notes you come back to and build on.
-Every note is a plain markdown file in your vault. The plugin gives it a dark-first glass
-page (Dev Glass: near-black or cool zinc, one accent, Geist type) and ties your notes together: by scripture, by what is still open, and by what you are
-praying for.
+Every note is a plain markdown file in your vault. The plugin gives it a Bento page (white or
+near-black panels, soft grey cards, black hero tiles, one neon green, Outfit type) and ties your
+notes together: by scripture, by what is still open, and by what you are praying for.
 
 ## What it does
 
 | | |
 | --- | --- |
-| **Home** | A search field that opens Obsidian's quick switcher, your Sunday streak (13 weeks), then Start as a short list: Sunday leads on Sundays, Meditation on other mornings. Below that: what is still open, what you are praying for, recent notes, your series, an index of every passage you have written about, and a status line. |
-| **Cover** | Each note opens with a breadcrumb and a header panel with its icon and a big title. The title *is* the file name, so editing it renames the file and links follow. The properties sit below, laid out like frontmatter, as rows you tap to edit. |
+| **Home** | A greeting with your week in one line, then tiles. *Start* is the Sunday tile: how many Sundays in a row, the other three kinds, and *Continue Abide · part 5* when last Sunday was part of a series. Then *Still open* (with how the count moved this week), *Praying for* (with a prayer answered in the last two weeks), *Notes this week* (per day, or per week for five weeks), an *Index of passages* as a heatmap, *Days in the Word* (this month's morning meditations), *Recent notes*, *What you wrote* this month by kind, and *Series* progress. The search button opens Obsidian's quick switcher; the settings button chooses which tiles show. |
+| **Cover** | Each note opens with a round Home button and a dark hero band: its kind, a ↗ that opens its passage, a big title and its properties as pills you tap to edit. The title *is* the file name, so editing it renames the file and links follow. |
 | **Scripture as the thread** | Write `John 15:5` anywhere and it becomes a passage chip. Tap it to open the passage and see every other note on that chapter. |
 | **Still open** | Any checkbox `- [ ]` in a Bible Notes note is an open item. A new note shows what is still open from earlier, and so does Home. |
 | **Praying for** | Checkboxes under a heading that mentions prayer (*Prayer*, *Praying for*) are prayer requests. Tick one from Bible Notes and it is remembered as answered, with how long ago you first wrote it down. |
-| **Carry-over** | A new Sunday note starts with last Sunday's speaker and church. The series is left for you to fill in; notes that share a series number themselves: Abide, part 4. |
+| **Carry-over** | A new Sunday note starts with last Sunday's speaker and church. The series is only added when you tap *Continue …* on Home, so a one-off sermon never joins it; notes that share a series number themselves: Abide, part 4. |
 | **Templates you own** | The four templates are ordinary notes in `Templates/Bible Notes/`. Reword a heading there and the next note follows. |
 | **Adopt what you have** | *Adopt existing notes* finds sermon, community, meditation and study notes already in your vault. You review the list first; adopting adds one property and changes nothing else. |
 | **Desktop and mobile** | Built for taking notes on a phone during the sermon. Follows your theme, light and dark. |
@@ -84,14 +84,15 @@ It never rewrites what you wrote.
 
 The folder for each kind's new notes, the template folder, the BibleHub translation, whether
 passage chips appear in every note or only in Bible Notes notes, and the church a Sunday
-note uses when the last one has none. Under Appearance, the accent colour: indigo (the default) or green.
+note uses when the last one has none. Under Home, a switch for each tile (the same choice as
+Home's settings button); Start always shows.
 
 ## Fonts
 
-Geist and Geist Mono are bundled inside `styles.css` (no network request). Copyright (c) 2023
-Vercel, in collaboration with basement.studio, under the SIL Open Font License 1.1; the licence
-text is in [`fonts/OFL.txt`](fonts/OFL.txt). The files come unmodified from the `geist` npm
-package, pinned in `package.json`.
+Outfit is bundled inside `styles.css` (no network request). Copyright 2021 The Outfit Project
+Authors, under the SIL Open Font License 1.1; the licence text is in
+[`fonts/OFL.txt`](fonts/OFL.txt). The files come unmodified from the `@fontsource-variable/outfit`
+npm package, pinned in `package.json`.
 
 ## Privacy
 
@@ -110,8 +111,7 @@ BIBLE_NOTES_VAULT_PATH=~/path/to/vault ./scripts/deploy.sh   # copy main.js, sty
 ```
 
 `main.js` and `styles.css` at the repo root are build output; edit `src/` (`styles.css` is
-`src/styles.css` with the two fonts inlined by `scripts/styles.mjs`). `.npmrc` sets
-`legacy-peer-deps` because `geist` lists `next` as a peer dependency it does not use. The mobile floor
+`src/styles.css` with the font inlined by `scripts/styles.mjs`). The mobile floor
 is iOS 15 WebKit (no lookbehind regex, no Node APIs, no `innerHTML`); `tests/ios-hazards.test.cjs`
 guards it. The preview harness loads Obsidian's own `app.css`, which you extract locally
 (it is gitignored and not distributed here).

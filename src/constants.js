@@ -4,14 +4,15 @@
 const KIND_KEY = 'bible-notes';
 const VIEW_TYPE = 'bible-notes-home';
 
-/* The four kinds, in Start-row order. `emoji` is the Notion-pure page icon;
-   `label` names an untitled note and the button; `command` is spelled out
-   because "Sunday" keeps its capital in sentence case and the others don't. */
+/* The four kinds, in Start-row order. `icon` is the lucide line icon in the
+   kind's round tile (checked against the lucide Obsidian bundles); `label`
+   names an untitled note and the button; `command` is spelled out because
+   "Sunday" keeps its capital in sentence case and the others don't. */
 const KINDS = [
-  { id: 'sunday', label: 'Sunday', button: 'Sunday note', command: 'New Sunday note', emoji: '⛪', tone: 'orange' },
-  { id: 'community', label: 'Community', button: 'Community', command: 'New community note', emoji: '🤝', tone: 'blue' },
-  { id: 'meditation', label: 'Meditation', button: 'Meditation', command: 'New meditation note', emoji: '🌅', tone: 'green' },
-  { id: 'study', label: 'Study', button: 'Study', command: 'New study note', emoji: '📖', tone: 'purple' },
+  { id: 'sunday', label: 'Sunday', button: 'Sunday note', command: 'New Sunday note', icon: 'church' },
+  { id: 'community', label: 'Community', button: 'Community', command: 'New community note', icon: 'users' },
+  { id: 'meditation', label: 'Meditation', button: 'Meditation', command: 'New meditation note', icon: 'sunrise' },
+  { id: 'study', label: 'Study', button: 'Study', command: 'New study note', icon: 'book-open' },
 ];
 const KIND_IDS = KINDS.map(k => k.id);
 const kindOf = id => KINDS.find(k => k.id === id) || null;
@@ -29,16 +30,10 @@ const DEFAULT_SETTINGS = {
   translation: 'niv',
   church: '',
   chipsEverywhere: true,
-  accent: 'indigo',
+  /* Home tiles hidden from Home's settings button or Settings → Home (ids
+     from src/tiles.js). */
+  hiddenTiles: [],
   templatesWritten: false,
 };
 
-/* The one accent colour at a time (Settings → Appearance). Indigo is the
-   default; green puts `bn-accent-green` on the plugin's roots, and styles.css
-   swaps the accent tokens under it. */
-const ACCENTS = [['indigo', 'Indigo'], ['green', 'Green']];
-const ACCENT_GREEN = 'bn-accent-green';
-const accentOf = settings => (settings && settings.accent === 'green' ? 'green' : 'indigo');
-const accentClass = settings => (accentOf(settings) === 'green' ? ACCENT_GREEN : '');
-
-module.exports = { KIND_KEY, VIEW_TYPE, KINDS, KIND_IDS, kindOf, DEFAULT_SETTINGS, ACCENTS, ACCENT_GREEN, accentOf, accentClass };
+module.exports = { KIND_KEY, VIEW_TYPE, KINDS, KIND_IDS, kindOf, DEFAULT_SETTINGS };

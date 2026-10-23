@@ -23,8 +23,9 @@ function freePath(dir, base, exists, self) {
    speaker and church of the most recent Sunday, but not its series: a
    one-off sermon would otherwise join the last series as its next part.
    Nothing is invented, and an empty field is left out rather than written
-   blank. */
-function planNote(kind, today, ctx) {
+   blank. `extra.series` is the one exception, and only because it was asked
+   for: Home's "Continue <series>" passes it for a Sunday note. */
+function planNote(kind, today, ctx, extra) {
   const { index, settings, exists } = ctx;
   if (kind !== 'study') {
     const same = index.notes.find(n => n.kind === kind && n.date === today);
@@ -33,6 +34,8 @@ function planNote(kind, today, ctx) {
   const fm = { [KIND_KEY]: kind };
   if (kind === 'study') fm.started = today; else fm.date = today;
   if (kind === 'sunday') {
+    const series = extra && typeof extra.series === 'string' ? extra.series.trim() : '';
+    if (series) fm.series = series;
     const last = index.notes.find(n => n.kind === 'sunday' && n.date && n.date < today);
     if (last && last.speaker) fm.speaker = last.speaker;
     const church = (last && last.church) || settings.church;

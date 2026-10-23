@@ -32,6 +32,18 @@ const index = buildIndex([olderSunday, lastSunday, todayMed], '2026-10-25');
   assert.strictEqual(p.text, '---\nbible-notes: sunday\ndate: 2026-10-25\nspeaker: Ps. Andrew\nchurch: Grace Church\n---\n\n## Message\n\n## What stuck\n\n## Response\n\n## Questions\n');
 }
 
+/* "Continue Abide" on Home: the series goes in only because it was asked
+   for, after the date and before what the last Sunday carries. Other kinds
+   ignore it. */
+{
+  const p = planNote('sunday', '2026-10-25', { index, settings: SETTINGS, exists: existsIn([]), templates: {} }, { series: 'Abide' });
+  assert.ok(p.text.startsWith('---\nbible-notes: sunday\ndate: 2026-10-25\nseries: Abide\nspeaker: Ps. Andrew\nchurch: Grace Church\n---\n\n'), p.text);
+  const m = planNote('meditation', '2026-10-26', { index, settings: SETTINGS, exists: existsIn([]), templates: {} }, { series: 'Abide' });
+  assert.ok(!/series/.test(m.text), 'a meditation never takes a series');
+  const blank = planNote('sunday', '2026-10-25', { index, settings: SETTINGS, exists: existsIn([]), templates: {} }, { series: '  ' });
+  assert.ok(!/series/.test(blank.text), 'a blank series is left out');
+}
+
 /* The first Sunday ever: church from settings, nothing else invented. */
 {
   const p = planNote('sunday', '2026-10-25', { index: buildIndex([], '2026-10-25'), settings: SETTINGS, exists: existsIn([]), templates: {} });

@@ -9,7 +9,7 @@
    ============================================================================ */
 
 const { Plugin, MarkdownView } = require('obsidian');
-const { VIEW_TYPE, DEFAULT_SETTINGS, KINDS, ACCENTS } = require('./constants');
+const { VIEW_TYPE, DEFAULT_SETTINGS, KINDS } = require('./constants');
 const { makeStore } = require('./store');
 const { HomeView } = require('./view');
 const { Covers } = require('./cover');
@@ -17,6 +17,7 @@ const { makePostProcessor, makeEditorExtension } = require('./chips');
 const { closePopover } = require('./popover');
 const { AdoptModal } = require('./adopt-modal');
 const { BibleNotesSettingTab } = require('./settings-tab');
+const { setTile } = require('./tiles');
 const D = require('./dates');
 
 class BibleNotesPlugin extends Plugin {
@@ -92,14 +93,28 @@ class BibleNotesPlugin extends Plugin {
     return view && view.file ? this.store.notes.get(view.file.path) || null : null;
   }
 
-  /* The accent changed in Settings: retag every note leaf and redraw each
-     cover and Home that is open. (A passage card already on screen keeps the
-     accent it opened with; the next one picks up the new one.) */
-  applyAccent() {
-    this.covers.refreshAll();
+  /* Redraw every open Home (its tiles changed). */
+  refreshHome() {
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
       if (leaf.view && leaf.view.home) leaf.view.home.render();
     }
+  }
+
+  /* Show or hide one Home tile — from Home's settings button or the
+     settings tab, which share this one list. */
+  async setTileShown(id, show) {
+    this.settings.hiddenTiles = setTile(this.settings.hiddenTiles, id, show);
+    await this.saveSettings();
+    this.refreshHome();
+  }
+
+  /* Settings → Bible Notes. `app.setting` is not in the public typings but
+     is how plugins open their own tab. */
+  openSettings() {
+    const s = this.app.setting;
+    if (!s || !s.open) return;
+    s.open();
+    if (s.openTabById) s.openTabById(this.manifest.id);
   }
 
   async openAdopt() {
@@ -120,7 +135,10 @@ class BibleNotesPlugin extends Plugin {
     const saved = (await this.loadData()) || {};
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
     this.settings.folders = Object.assign({}, DEFAULT_SETTINGS.folders, saved.folders || {});
-    if (!ACCENTS.some(([id]) => id === this.settings.accent)) this.settings.accent = DEFAULT_SETTINGS.accent;
+    /* Its own copy, never the default's array. */
+    this.settings.hiddenTiles = Array.isArray(saved.hiddenTiles) ? saved.hiddenTiles.slice() : [];
+    /* 0.3.0 had an accent choice; Bento has one palette. */
+    delete this.settings.accent;
   }
 
   async saveSettings() {

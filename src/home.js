@@ -1,21 +1,30 @@
 'use strict';
-/* Home — the Dev Glass page: a quick-switcher field, the greeting, the Sunday
-   streak, Start as a command palette, Still open, Praying for (with the
-   answered diff), Recent as a commit log, the passage index as heat tiles and
-   a status line. Built from the index on the standard DOM only, so the
-   preview harness renders the same code. */
+/* Home — the Bento page. A bar (the mark, the week's pills, the quick
+   switcher), the greeting with the week in one line, then tiles: Start (the
+   Sunday tile, the other kinds and "Continue <series>"), Still open, Praying
+   for (with the answered moment), notes per day or per week, the index of
+   passages as a one-hue heatmap, days in the Word, recent notes, what was
+   written this month and series progress. Built from the index on the
+   standard DOM only, so the preview harness renders the same code. */
 
-const { Platform } = require('obsidian');
+const { Platform, Menu } = require('obsidian');
 const { el, icon, button, clear, checkRow } = require('./dom');
-const { KINDS, kindOf, accentOf, ACCENT_GREEN } = require('./constants');
-const { partOf } = require('./index');
+const { KINDS, kindOf } = require('./constants');
+const { TILES, shownTiles } = require('./tiles');
 const { buildStreak } = require('./streak');
+const S = require('./stats');
 const D = require('./dates');
 
-const OPEN_LIMIT = 6;
+const OPEN_LIMIT = 3;
+const PRAY_LIMIT = 3;
+const RECENT_SHORT = 5;
+const INDEX_BOOKS = 6;
 const ANSWERED_FRESH_DAYS = 14;
-/* A study session's dated heading: `## 20 October 2026`. */
-const SESSION_HEADING = /^#{1,6}[ \t]+\d{1,2} [A-Z][a-z]+ \d{4}[ \t]*$/gm;
+/* Two columns of tiles from this width of the view, three (in a framed
+   panel) from the next. */
+const WIDE = 700;
+const XWIDE = 1080;
+const SVG = 'http://www.w3.org/2000/svg';
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
 
@@ -25,8 +34,8 @@ function greeting(hour) {
   return 'Good evening';
 }
 
-/* Which kind the Start list leads with: Sunday all Sunday, Meditation on
-   other mornings, none otherwise. */
+/* Which kind the day leads with: Sunday all Sunday, Meditation on other
+   mornings, none otherwise. */
 function emphasis(today, hour) {
   if (D.weekday(today) === 0) return 'sunday';
   if (hour < 12) return 'meditation';
@@ -38,32 +47,71 @@ function firstPassage(note) {
   return note.scripture.length ? note.scripture[0].raw : '';
 }
 
+/* "19 – 25 Oct 2026", "28 Sep – 4 Oct 2026", "29 Dec 2026 – 4 Jan 2027". */
+function weekRange({ start, end }) {
+  const day = iso => Number(iso.slice(8, 10));
+  const mon = iso => D.MONTHS[Number(iso.slice(5, 7)) - 1].slice(0, 3);
+  if (start.slice(0, 4) !== end.slice(0, 4)) return `${day(start)} ${mon(start)} ${start.slice(0, 4)} – ${day(end)} ${mon(end)} ${end.slice(0, 4)}`;
+  if (start.slice(5, 7) !== end.slice(5, 7)) return `${day(start)} ${mon(start)} – ${day(end)} ${mon(end)} ${end.slice(0, 4)}`;
+  return `${day(start)} – ${day(end)} ${mon(end)} ${end.slice(0, 4)}`;
+}
+
 /* Obsidian's default hotkey for the quick switcher is Cmd/Ctrl+O. */
 const switcherHint = () => (Platform.isMacOS ? '⌘O' : 'Ctrl O');
 
-/* How long the answer took, for the "+" row of the answered diff. */
-function daysPhrase(a) {
-  if (a.days === null) return '';
-  return a.days === 0 ? 'the same day' : `after ${plural(a.days, 'day')}`;
+function svg(parent, tag, attrs) {
+  const n = document.createElementNS(SVG, tag);
+  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, String(v));
+  if (parent) parent.appendChild(n);
+  return n;
 }
 
 function mountHome(container, ctx) {
   const { store } = ctx;
-  const state = { openAll: false, answeredOpen: false, chapter: null, adoptCount: 0, seenAnswered: new Set() };
+  const state = {
+    openAll: false, prayAll: false, answeredOpen: false, chapter: null, indexAll: false,
+    range: 'week', recentAll: false, adoptCount: 0, adoptSermons: false, seenAnswered: new Set(),
+  };
   const root = el(container, 'div', 'bn-home');
+  /* Measured on the view, not on Home itself: the framed panel's own margins
+     must not flip it back below the width that framed it. */
+  const size = () => {
+    const w = container.clientWidth || root.clientWidth;
+    root.classList.toggle('bn-wide', w >= WIDE);
+    root.classList.toggle('bn-xwide', w >= XWIDE);
+  };
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
-    ro = new ResizeObserver(() => root.classList.toggle('bn-wide', root.clientWidth >= 760));
-    ro.observe(root);
+    ro = new ResizeObserver(size);
+    ro.observe(container);
+  }
+  let uid = 0;
+
+  /* A tile: a card with a title, a line under it, and room on the right of
+     the head for a round arrow or a toggle. */
+  function card(parent, cls, title, sub) {
+    const sec = el(parent, 'section', 'bn-card' + (cls ? ' ' + cls : ''));
+    const head = el(sec, 'div', 'bn-head');
+    const t = el(head, 'div', 'bn-head-t');
+    const h = el(t, 'h2', 'bn-lbl', title);
+    h.id = `bn-h${++uid}`;
+    sec.setAttribute('aria-labelledby', h.id);
+    if (sub) el(t, 'p', 'bn-sub', sub);
+    return { sec, head };
   }
 
-  /* A kind dot, then "Title · date". The button carries the kind class, so
-     the dot takes the kind's colour. */
-  function meta(parent, note, today) {
-    parent.classList.add(`bn-k-${note.kind}`);
-    el(parent, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
-    parent.appendChild(document.createTextNode(`${note.title}${note.date ? ' · ' + D.shortDate(note.date, today) : ''}`));
+  /* The round ↗ button. Expanded, it turns to point back. */
+  function arrow(parent, label, onClick, cls) {
+    const b = el(parent, 'button', 'bn-arrow' + (cls ? ' ' + cls : ''));
+    b.type = 'button';
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    icon(b, 'arrow-up-right');
+    b.addEventListener('click', onClick);
+    return b;
   }
+
+  function toggle(key) { state[key] = !state[key]; render(); }
 
   /* The quick switcher, Obsidian's own. `app.commands` is not in the public
      typings but is what every plugin uses to run a command by id. */
@@ -73,7 +121,7 @@ function mountHome(container, ctx) {
   }
 
   function taskRow(parent, item, today) {
-    const { row, box } = checkRow(parent, 'bn-row bn-task', item.task.done, async (checked) => {
+    const { row, box } = checkRow(parent, 'bn-task', item.task.done, async (checked) => {
       row.classList.toggle('is-done', checked);
       const ok = await store.toggle(item.note, item.task, checked);
       if (!ok) { box.checked = !checked; row.classList.toggle('is-done', !checked); }
@@ -81,283 +129,354 @@ function mountHome(container, ctx) {
     box.setAttribute('aria-label', item.task.text);
     const t = el(row, 'span', 'bn-task-text');
     el(t, 'span', 'bn-task-title', item.task.text);
-    const m = el(t, 'button', 'bn-task-meta');
+    const m = el(t, 'button', 'bn-task-meta', `${item.note.title}${item.note.date ? ' · ' + D.shortDate(item.note.date, today) : ''}`);
     m.type = 'button';
-    meta(m, item.note, today);
     m.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); store.openPath(item.note.path); });
     return row;
   }
 
-  function sectionHead(parent, title, count) {
-    const h = el(parent, 'div', 'bn-sec-head');
-    el(h, 'h2', 'bn-label', title);
-    if (count !== undefined) el(h, 'span', 'bn-count', String(count));
-    return h;
-  }
-
-  /* The church line under the date: the last Sunday note's, then the one in
+  /* The church under Start: the last Sunday note's, then the one in
      Settings. */
   function churchOf(idx) {
     const last = idx.notes.find(n => n.kind === 'sunday' && n.church);
     return last ? last.church : ((ctx.plugin && ctx.plugin.settings && ctx.plugin.settings.church) || '');
   }
 
-  function renderSearch(parent) {
-    const b = el(parent, 'button', 'bn-glass bn-cmd');
-    b.type = 'button';
-    icon(b, 'search', 'bn-cmd-ico');
-    el(b, 'span', 'bn-cmd-text', 'Jump to a note or passage');
-    el(b, 'span', 'bn-kbd bn-cmd-kbd', switcherHint()).setAttribute('aria-hidden', 'true');
-    b.addEventListener('click', openSwitcher);
-  }
-
-  /* 13 weeks x 7 days. Sunday notes in the accent, other notes dimmer, today
-     dashed. Hidden when there are no notes at all. */
-  function renderStreak(parent, idx, now, today) {
-    const s = buildStreak(idx.notes, now);
-    if (s.empty) return;
-    const sec = el(parent, 'section', 'bn-glass bn-streak');
-    sec.setAttribute('aria-label', 'Sunday streak');
-    const head = el(sec, 'div', 'bn-st-h');
-    el(head, 'strong', null, s.sundays ? `${plural(s.sundays, 'Sunday')} in a row` : 'No Sundays in a row');
-    const next = s.next.today ? 'today' : (D.diffDays(today, s.next.date) === 1 ? 'tomorrow' : `Sun ${D.shortDate(s.next.date, today)}`);
-    el(head, 'span', null, `next: ${next}`);
-    const grid = el(sec, 'div', 'bn-hm');
-    grid.setAttribute('aria-hidden', 'true');
-    for (const week of s.weeks) {
-      const col = el(grid, 'span', 'bn-hm-c');
-      for (const c of week) {
-        el(col, 'i', 'bn-hm-d' + (c.kind === 'sunday' ? ' is-sunday' : c.kind === 'other' ? ' is-other' : '')
-          + (c.today ? ' is-today' : '') + (c.future ? ' is-future' : ''));
-      }
+  function renderBar(parent, idx, today) {
+    const bar = el(parent, 'header', 'bn-topbar');
+    const brand = el(bar, 'div', 'bn-brand');
+    icon(el(brand, 'span', 'bn-mark'), 'book-open');
+    el(brand, 'span', 'bn-brand-t', 'Bible Notes');
+    const right = el(bar, 'div', 'bn-topbar-r');
+    if (idx.notes.length) {
+      const n = el(right, 'span', 'bn-pill bn-pill-grey bn-topbar-pill');
+      el(n, 'i', 'bn-live').setAttribute('aria-hidden', 'true');
+      n.appendChild(document.createTextNode(plural(idx.notes.length, 'note')));
+      el(right, 'span', 'bn-pill bn-pill-grey bn-topbar-pill', weekRange(S.weekOf(today)));
     }
-    const months = el(sec, 'div', 'bn-hm-m');
-    months.setAttribute('aria-hidden', 'true');
-    for (const m of s.months) el(months, 'span', null, m.label).style.setProperty('--bn-col', String(m.col + 1));
-    const legend = el(sec, 'div', 'bn-hm-l');
-    for (const [cls, label] of [['is-sunday', 'Sunday note'], ['is-other', 'Other notes']]) {
-      const item = el(legend, 'span');
-      el(item, 'i', `bn-hm-key ${cls}`);
-      item.appendChild(document.createTextNode(label));
+    const s = el(right, 'button', 'bn-circle');
+    s.type = 'button';
+    s.setAttribute('aria-label', `Jump to a note or passage (${switcherHint()})`);
+    s.title = `Jump to a note or passage (${switcherHint()})`;
+    icon(s, 'search');
+    s.addEventListener('click', openSwitcher);
+    if (ctx.plugin) {
+      const g = el(right, 'button', 'bn-circle');
+      g.type = 'button';
+      g.setAttribute('aria-label', 'Choose what Home shows');
+      g.setAttribute('aria-haspopup', 'menu');
+      g.title = 'Choose what Home shows';
+      icon(g, 'sliders-horizontal');
+      g.addEventListener('click', () => tileMenu(g));
     }
   }
 
-  /* Start, as a command-palette list: one row per kind with a key chip. The
-     kind the day leads with is the selected row (Enter). */
-  function renderStart(parent, idx, today, hour) {
-    const sec = el(parent, 'section', 'bn-sec bn-start');
-    sectionHead(sec, 'Start');
-    const lead = emphasis(today, hour);
-    const panel = el(sec, 'div', 'bn-glass bn-list');
-    for (const k of KINDS) {
-      const b = el(panel, 'button', `bn-pal bn-k-${k.id}` + (k.id === lead ? ' is-lead' : ''));
-      b.type = 'button';
-      el(b, 'span', 'bn-et', k.emoji).setAttribute('aria-hidden', 'true');
-      const txt = el(b, 'span', 'bn-pal-t');
-      el(txt, 'strong', null, k.id === 'meditation' && lead === 'meditation' ? 'Morning meditation' : k.button);
-      el(txt, 'span', null, kindSubtitle(idx, k.id, today));
-      el(b, 'span', 'bn-kbd', k.id === lead ? '↵' : '›').setAttribute('aria-hidden', 'true');
-      b.addEventListener('click', () => store.createNote(k.id));
+  /* Home's settings button: a tick for each tile, "Show all tiles" once one
+     is hidden, and the plugin's settings tab. Obsidian's own menu, so on a
+     phone it is a sheet. */
+  function tileMenu(anchor) {
+    const plugin = ctx.plugin;
+    const shown = new Set(shownTiles(plugin.settings));
+    const menu = new Menu();
+    for (const t of TILES) {
+      menu.addItem(i => i.setTitle(t.label).setChecked(shown.has(t.id)).onClick(() => plugin.setTileShown(t.id, !shown.has(t.id))));
     }
+    if (shown.size < TILES.length) {
+      menu.addSeparator();
+      menu.addItem(i => i.setTitle('Show all tiles').setIcon('eye').onClick(async () => {
+        plugin.settings.hiddenTiles = [];
+        await plugin.saveSettings();
+        plugin.refreshHome();
+      }));
+    }
+    menu.addSeparator();
+    menu.addItem(i => i.setTitle('Bible Notes settings').setIcon('settings').onClick(() => plugin.openSettings()));
+    const r = anchor.getBoundingClientRect();
+    menu.showAtPosition({ x: r.right, y: r.bottom + 6, left: true });
   }
 
-  function kindSubtitle(idx, kind, today) {
-    const todays = idx.notes.find(n => n.kind === kind && n.date === today);
-    if (todays) return `Continue “${todays.title}”`;
-    if (kind === 'meditation') return 'A passage, a prayer, one line to carry';
-    if (kind === 'community') return 'Who was there, passage, prayer';
-    if (kind === 'study') return 'Questions and sessions';
+  /* Start: the Sunday tile. Below it the run of Sundays, then the series a
+     new note can continue (only when asked) and the other three kinds. */
+  function renderStart(parent, idx, now, today, hour) {
+    const sec = el(parent, 'section', 'bn-card bn-hero bn-start');
+    sec.setAttribute('aria-label', 'Start a note');
+    const todays = idx.notes.find(n => n.kind === 'sunday' && n.date === today);
     const last = idx.notes.find(n => n.kind === 'sunday' && n.date && n.date < today);
-    if (!last) return 'Message, what stuck, response';
-    return last.speaker ? `Last week: ${last.speaker}` : 'Message, what stuck, response';
+    const main = el(sec, 'button', 'bn-start-main');
+    main.type = 'button';
+    const t = el(main, 'span', 'bn-head-t');
+    el(t, 'span', 'bn-lbl', todays ? 'Today’s Sunday note' : 'Start your Sunday note');
+    el(t, 'span', 'bn-sub', todays ? todays.title : (last && last.speaker ? `Last week: ${last.speaker}` : 'Message, what stuck, response'));
+    icon(el(main, 'span', 'bn-arrow is-inv'), 'arrow-up-right');
+    main.addEventListener('click', () => (todays ? store.openPath(todays.path) : store.createNote('sunday')));
+
+    const s = buildStreak(idx.notes, now);
+    const foot = el(sec, 'div', 'bn-start-foot');
+    const run = el(foot, 'span', 'bn-run');
+    el(run, 'span', 'bn-big', String(s.sundays));
+    el(run, 'span', 'bn-run-cap', s.sundays === 1 ? 'Sunday in a row' : 'Sundays in a row');
+    const meta = el(foot, 'span', 'bn-start-meta');
+    const next = s.next.today ? 'today' : (D.diffDays(today, s.next.date) === 1 ? 'tomorrow' : `Sun ${D.shortDate(s.next.date, today)}`);
+    el(meta, 'span', null, `Next: ${next}`);
+    const church = churchOf(idx);
+    if (church) el(meta, 'span', null, church);
+
+    const pills = el(sec, 'div', 'bn-start-pills');
+    const cont = !todays && S.nextSeries(idx.notes, today);
+    if (cont) button(pills, 'bn-pill bn-pill-green', `Continue ${cont.series} · part ${cont.part}`, () => store.createNote('sunday', { series: cont.series }), 'plus');
+    const lead = emphasis(today, hour);
+    for (const k of KINDS) {
+      if (k.id === 'sunday') continue;
+      const open = k.id !== 'study' && idx.notes.find(n => n.kind === k.id && n.date === today);
+      const b = button(pills, 'bn-pill bn-pill-hero' + (k.id === lead ? ' is-lead' : ''), k.label, () => store.createNote(k.id), k.icon);
+      b.setAttribute('aria-label', open ? `Open today’s ${k.label.toLowerCase()} note, “${open.title}”` : `New ${k.label.toLowerCase()} note`);
+    }
   }
 
   function renderOpen(parent, idx, today) {
-    if (!idx.open.length) return;
-    const sec = el(parent, 'section', 'bn-sec');
-    sectionHead(sec, 'Still open', idx.open.length);
-    const panel = el(sec, 'div', 'bn-glass bn-list');
-    const list = state.openAll ? idx.open : idx.open.slice(0, OPEN_LIMIT);
-    for (const item of list) taskRow(panel, item, today);
+    const { sec, head } = card(parent, 'bn-open', 'Still open', 'From your recent notes');
     if (idx.open.length > OPEN_LIMIT) {
-      const ft = el(panel, 'div', 'bn-ft');
-      el(ft, 'span', null, state.openAll ? `All ${idx.open.length} shown` : `${list.length} of ${idx.open.length} shown`);
-      const more = el(ft, 'button', 'bn-more');
-      more.type = 'button';
-      el(more, 'span', null, state.openAll ? 'Show fewer' : 'Show all');
-      el(more, 'span', 'bn-kbd', state.openAll ? '↑' : '↓').setAttribute('aria-hidden', 'true');
-      more.addEventListener('click', () => { state.openAll = !state.openAll; render(); });
+      arrow(head, state.openAll ? 'Show fewer' : `Show all ${idx.open.length}`, () => toggle('openAll'), state.openAll ? 'is-back' : '')
+        .setAttribute('aria-expanded', String(state.openAll));
     }
+    const num = el(sec, 'div', 'bn-num');
+    el(num, 'span', 'bn-big', String(idx.open.length));
+    const delta = S.openDelta(idx.notes, today);
+    if (delta) el(num, 'span', 'bn-pill ' + (delta < 0 ? 'bn-pill-green' : 'bn-pill-grey'), `${delta < 0 ? '−' : '+'}${Math.abs(delta)} this week`);
+    if (!idx.open.length) {
+      el(sec, 'p', 'bn-hint', 'Nothing open. A checkbox in any note shows up here until it is ticked.');
+      return;
+    }
+    const list = el(sec, 'div', 'bn-list');
+    for (const item of state.openAll ? idx.open : idx.open.slice(0, OPEN_LIMIT)) taskRow(list, item, today);
   }
 
   function renderPrayer(parent, idx, today) {
-    const fresh = idx.answered.find(a => a.task.doneDate && D.diffDays(a.task.doneDate, today) <= ANSWERED_FRESH_DAYS);
-    if (!idx.praying.length && !idx.answered.length) return;
-    const sec = el(parent, 'section', 'bn-sec');
-    sectionHead(sec, 'Praying for', idx.praying.length);
-    if (idx.praying.length) {
-      const panel = el(sec, 'div', 'bn-glass bn-list');
-      for (const item of idx.praying) taskRow(panel, item, today);
+    const { sec, head } = card(parent, 'bn-pray', 'Praying for', 'Answered prayers stay remembered');
+    if (idx.praying.length > PRAY_LIMIT) {
+      arrow(head, state.prayAll ? 'Show fewer' : `Show all ${idx.praying.length}`, () => toggle('prayAll'), state.prayAll ? 'is-back' : '')
+        .setAttribute('aria-expanded', String(state.prayAll));
     }
-    if (fresh) answeredMoment(sec, fresh, today);
+    const num = el(sec, 'div', 'bn-num');
+    el(num, 'span', 'bn-big', String(idx.praying.length));
     if (idx.answered.length) {
-      const t = button(sec, 'bn-more bn-more-quiet', state.answeredOpen ? 'Hide answered' : `${plural(idx.answered.length, 'answered prayer')}`, () => { state.answeredOpen = !state.answeredOpen; render(); });
-      t.setAttribute('aria-expanded', String(state.answeredOpen));
-      if (state.answeredOpen) {
-        const list = el(sec, 'div', 'bn-glass bn-list bn-answered-list');
-        for (const a of idx.answered) {
-          const r = el(list, 'button', 'bn-row bn-answered-row');
-          r.type = 'button';
-          el(r, 'span', 'bn-answered-mark', '✓').setAttribute('aria-hidden', 'true');
-          el(r, 'span', 'bn-grow', a.task.text);
-          el(r, 'span', 'bn-dim', a.days === null ? 'answered' : (a.days === 0 ? 'same day' : plural(a.days, 'day')));
-          r.addEventListener('click', () => store.openPath(a.note.path));
-        }
-      }
+      const p = button(num, 'bn-pill bn-pill-grey bn-pill-btn', state.answeredOpen ? 'Hide answered' : `${idx.answered.length} answered`, () => toggle('answeredOpen'));
+      p.setAttribute('aria-expanded', String(state.answeredOpen));
+    }
+    if (!idx.praying.length && !idx.answered.length) {
+      el(sec, 'p', 'bn-hint', 'Checkboxes under a heading with “pray” in it become prayer requests. Tick one when it is answered.');
+      return;
+    }
+    const list = el(sec, 'div', 'bn-list');
+    for (const item of state.prayAll ? idx.praying : idx.praying.slice(0, PRAY_LIMIT)) taskRow(list, item, today);
+    if (state.answeredOpen) {
+      for (const a of idx.answered) answeredRow(list, a, false);
+    } else {
+      const fresh = idx.answered.find(a => a.task.doneDate && D.diffDays(a.task.doneDate, today) <= ANSWERED_FRESH_DAYS);
+      if (fresh) answeredRow(list, fresh, true);
     }
   }
 
-  /* The prayer answered most recently, as a diff: the request as it was
-     written (muted, "−") and the answer (green, "+"). The note stores one
-     line, so the "+" row says when it was answered rather than rewording
-     it. */
-  function answeredMoment(parent, a, today) {
-    /* It rises in once — the first time this answer is shown — not on every
-       redraw. */
+  /* An answered prayer: ticked green, with how long the answer took. The
+     most recent one (answered in the last two weeks) rises in once — the
+     first time it is shown, not on every redraw. */
+  function answeredRow(parent, a, moment) {
     const key = a.note.path + '\n' + a.task.raw;
-    const fresh = !state.seenAnswered.has(key);
-    state.seenAnswered.add(key);
-    const box = el(parent, 'button', 'bn-diff' + (fresh ? ' is-new' : ''));
-    box.type = 'button';
-    el(box, 'span', 'bn-diff-h', a.days === null ? 'answered' : (a.days === 0 ? 'answered · same day' : `answered · ${plural(a.days, 'day')}`));
-    const old = el(box, 'span', 'bn-dl is-old');
-    el(old, 'i', null, '−').setAttribute('aria-hidden', 'true');
-    el(old, 'span', null, a.task.text);
-    const added = el(box, 'span', 'bn-dl is-add');
-    el(added, 'i', null, '+').setAttribute('aria-hidden', 'true');
-    el(added, 'span', null, `Answered ${daysPhrase(a)}`.trim());
-    const bits = [];
-    if (a.note.date) bits.push(`Written ${D.shortDate(a.note.date, today)}`);
-    if (a.task.doneDate) bits.push(`answered ${D.shortDate(a.task.doneDate, today).toLowerCase()}`);
-    el(box, 'span', 'bn-diff-f', bits.length ? bits.join(' · ') : a.note.title);
-    box.addEventListener('click', () => store.openPath(a.note.path));
+    const rise = moment && !state.seenAnswered.has(key);
+    if (moment) state.seenAnswered.add(key);
+    const r = el(parent, 'button', 'bn-answered' + (rise ? ' is-new' : ''));
+    r.type = 'button';
+    icon(el(r, 'span', 'bn-tick'), 'check');
+    el(r, 'span', 'bn-answered-t', a.task.text);
+    const took = a.days === null ? 'answered' : (a.days === 0 ? 'same day' : plural(a.days, 'day'));
+    el(r, 'span', 'bn-pill bn-pill-green bn-pill-sm', took);
+    r.setAttribute('aria-label', `Answered${a.days === null ? '' : a.days === 0 ? ' the same day' : ' after ' + plural(a.days, 'day')}: ${a.task.text}. Opens ${a.note.title}`);
+    r.addEventListener('click', () => store.openPath(a.note.path));
   }
 
-  /* Recent, as a commit log: a rail down the left with a dot in the kind's
-     colour, the title, then emoji and date, and the first passage as a key
-     cap on the right. */
-  function renderRecent(parent, idx, today) {
-    if (!idx.recent.length) return;
-    const sec = el(parent, 'section', 'bn-sec');
-    sectionHead(sec, 'Recent');
-    const panel = el(sec, 'div', 'bn-glass bn-list');
-    for (const n of idx.recent) {
-      const r = el(panel, 'button', `bn-lg bn-k-${n.kind}`);
-      r.type = 'button';
-      el(r, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
-      const t = el(r, 'span', 'bn-lg-t');
-      el(t, 'strong', 'bn-ellipsis', n.title);
-      const sub = el(t, 'span');
-      el(sub, 'span', null, kindOf(n.kind).emoji).setAttribute('aria-hidden', 'true');
-      const p = firstPassage(n);
-      const bits = [];
-      if (!p && n.kind === 'study') {
-        const sessions = (n.body.match(SESSION_HEADING) || []).length;
-        if (sessions) bits.push(plural(sessions, 'session'));
-      }
-      if (n.date) bits.push(D.shortDate(n.date, today));
-      sub.appendChild(document.createTextNode(bits.join(' · ')));
-      if (p) el(r, 'span', 'bn-keycap', p);
-      r.addEventListener('click', () => store.openPath(n.path));
+  /* Notes this week (Monday to Sunday), or per week for five weeks. The
+     fullest bar is green and carries its count. */
+  function renderWeek(parent, idx, today) {
+    const week = state.range === 'week';
+    const { sec, head } = card(parent, 'bn-week', week ? 'Notes this week' : 'Notes per week', week ? 'Everything you wrote, per day' : 'The last five weeks');
+    const seg = el(head, 'div', 'bn-seg');
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Range');
+    for (const [id, label] of [['week', 'Week'], ['month', 'Month']]) {
+      button(seg, 'bn-seg-b' + (state.range === id ? ' is-on' : ''), label, () => { state.range = id; render(); })
+        .setAttribute('aria-pressed', String(state.range === id));
     }
+    const bars = week
+      ? S.weekBars(idx.notes, today).days.map(d => ({ label: d.label, count: d.count, now: d.today, future: d.future, name: D.DAYS[D.weekday(d.date)] }))
+      : S.monthBars(idx.notes, today).bars.map(b => ({ label: b.label, count: b.count, now: b.current, future: false, name: `week of ${b.label}` }));
+    const max = Math.max(0, ...bars.map(b => b.count));
+    let peak = -1;
+    bars.forEach((b, i) => { if (max && b.count === max) peak = i; });
+    const chart = el(sec, 'div', 'bn-chart');
+    chart.setAttribute('role', 'img');
+    chart.setAttribute('aria-label', `${week ? 'Notes per day' : 'Notes per week'}: ${bars.map(b => `${b.name} ${b.count}`).join(', ')}`);
+    bars.forEach((b, i) => {
+      const col = el(chart, 'span', 'bn-col');
+      const bar = el(col, 'span', 'bn-bar' + (i === peak ? ' is-peak' : '') + (b.future ? ' is-future' : ''));
+      bar.style.setProperty('--bn-h', `${b.future || !max ? 8 : Math.max(8, Math.round((b.count / max) * 100))}%`);
+      if (i === peak) el(bar, 'span', 'bn-bar-n', String(b.count));
+    });
+    const x = el(sec, 'div', 'bn-chart-x');
+    x.setAttribute('aria-hidden', 'true');
+    for (const b of bars) el(x, 'span', b.now ? 'is-now' : null, b.label);
   }
 
-  /* The index of passages as heat tiles: book, then its chapters, each tile
-     warmer the more notes are on it. A chapter opens its notes right there. */
-  function renderPassages(parent, idx, today) {
-    if (!idx.passages.length) return;
-    const sec = el(parent, 'section', 'bn-sec bn-index');
-    sectionHead(sec, 'Passages');
-    const panel = el(sec, 'div', 'bn-glass bn-list');
-    for (const b of idx.passages) {
-      const row = el(panel, 'div', 'bn-ix');
-      el(row, 'strong', 'bn-index-book', b.book);
-      const chs = el(row, 'span', 'bn-ix-c');
+  /* The index of passages: book, then its chapters as pills, greener the
+     more notes are on them. A chapter opens its notes right there. */
+  function renderIndex(parent, idx, today) {
+    const { sec, head } = card(parent, 'bn-index', 'Index of passages', idx.passages.length ? 'Tap a chapter for its notes' : 'Chapters you write about gather here');
+    if (!idx.passages.length) {
+      el(sec, 'p', 'bn-hint', 'Add a passage to a note’s cover, or write a reference like John 15:5 anywhere in it.');
+      return;
+    }
+    if (idx.passages.length > INDEX_BOOKS) {
+      arrow(head, state.indexAll ? 'Show fewer books' : `Show all ${idx.passages.length} books`, () => toggle('indexAll'), state.indexAll ? 'is-back' : '')
+        .setAttribute('aria-expanded', String(state.indexAll));
+    }
+    const grid = el(sec, 'div', 'bn-ix');
+    const books = state.indexAll ? idx.passages : idx.passages.slice(0, INDEX_BOOKS);
+    for (const b of books) {
+      el(grid, 'span', 'bn-ix-book', b.book);
+      const chs = el(grid, 'span', 'bn-ix-c');
       let open = null;
       for (const c of b.chapters) {
-        const heat = Math.min(3, c.notes.length);
-        const a = el(chs, 'button', `bn-tile is-heat-${heat}` + (state.chapter === c.key ? ' is-open' : ''));
-        a.type = 'button';
-        a.setAttribute('aria-expanded', String(state.chapter === c.key));
-        a.setAttribute('aria-label', `${c.key}, ${plural(c.notes.length, 'note')}`);
-        el(a, 'span', null, String(c.chapter));
-        el(a, 'sup', null, String(c.notes.length));
-        a.addEventListener('click', () => { state.chapter = state.chapter === c.key ? null : c.key; render(); });
-        if (state.chapter === c.key) open = c;
+        const isOpen = state.chapter === c.key;
+        const p = el(chs, 'button', `bn-heat is-h${S.heatLevel(c.notes.length)}` + (isOpen ? ' is-open' : ''), String(c.chapter));
+        p.type = 'button';
+        p.setAttribute('aria-expanded', String(isOpen));
+        p.setAttribute('aria-label', `${c.key}, ${plural(c.notes.length, 'note')}`);
+        p.addEventListener('click', () => { state.chapter = isOpen ? null : c.key; render(); });
+        if (isOpen) open = c;
       }
       if (open) {
-        const list = el(panel, 'div', 'bn-index-notes');
+        const list = el(grid, 'div', 'bn-ix-notes');
         for (const n of open.notes) {
-          const r = el(list, 'button', `bn-row bn-index-note bn-k-${n.kind}`);
+          const r = el(list, 'button', 'bn-ix-note');
           r.type = 'button';
-          el(r, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
-          el(r, 'span', 'bn-row-emoji', kindOf(n.kind).emoji).setAttribute('aria-hidden', 'true');
+          icon(r, kindOf(n.kind).icon, 'bn-ix-kind');
           el(r, 'span', 'bn-grow bn-ellipsis', n.title);
-          el(r, 'span', 'bn-dim bn-date', n.date ? D.shortDate(n.date, today) : '');
+          el(r, 'span', 'bn-faint', n.date ? D.shortDate(n.date, today) : '');
           r.addEventListener('click', () => store.openPath(n.path));
         }
       }
     }
-  }
-
-  function renderSeries(parent, idx, today) {
-    if (!idx.series.length) return;
-    const sec = el(parent, 'section', 'bn-sec');
-    sectionHead(sec, 'Series');
-    const panel = el(sec, 'div', 'bn-glass bn-list');
-    for (const s of idx.series.slice(0, 4)) {
-      const last = s.notes[s.notes.length - 1];
-      const r = el(panel, 'button', 'bn-row bn-series');
-      r.type = 'button';
-      const left = el(r, 'span', 'bn-grow bn-series-left');
-      el(left, 'span', 'bn-series-name', s.name);
-      const bars = el(left, 'span', 'bn-series-bars');
-      bars.setAttribute('aria-label', `${plural(s.notes.length, 'part')}`);
-      for (const x of s.notes.slice(-8)) el(bars, 'span', 'bn-series-bar' + (x.note.date === today ? ' is-today' : ''));
-      if (last.note.date === today) el(r, 'span', 'bn-pill', `Part ${last.part} today`);
-      else {
-        const first = s.notes[0].note.date;
-        const mon = iso => D.MONTHS[Number(iso.slice(5, 7)) - 1].slice(0, 3);
-        const range = !first || !last.note.date ? ''
-          : (first.slice(0, 7) === last.note.date.slice(0, 7) ? ` · ${mon(first)}` : ` · ${mon(first)} – ${mon(last.note.date)}`);
-        el(r, 'span', 'bn-dim', `${plural(s.notes.length, 'note')}${range}`);
-      }
-      r.addEventListener('click', () => store.openPath(last.note.path));
+    const legend = el(sec, 'div', 'bn-legend');
+    for (const [lv, label] of [[1, '1 note'], [2, '2–3'], [3, '4 or more']]) {
+      const item = el(legend, 'span');
+      el(item, 'i', `bn-key is-h${lv}`);
+      item.appendChild(document.createTextNode(label));
     }
   }
 
-  function renderStatus(parent, idx) {
-    const line = el(parent, 'div', 'bn-statl');
-    el(line, 'span', 'bn-ok', `${plural(idx.notes.length, 'note')} · ${idx.open.length} open`);
-    const tr = ctx.plugin && ctx.plugin.settings && ctx.plugin.settings.translation;
-    el(line, 'span', null, `${tr ? String(tr).toUpperCase() + ' · ' : ''}Bible Notes`);
+  /* Morning meditations this month: met, missed, and a dot for every day. */
+  function renderDays(parent, idx, today) {
+    const d = S.daysInWord(idx.notes, today);
+    const { sec, head } = card(parent, 'bn-hero bn-days', 'Days in the Word', `Morning meditations, ${d.month}`);
+    const todays = idx.notes.find(n => n.kind === 'meditation' && n.date === today);
+    arrow(head, todays ? 'Open today’s meditation' : 'Start today’s meditation', () => store.createNote('meditation'), 'is-inv');
+    const nums = el(sec, 'div', 'bn-days-n');
+    const met = el(nums, 'span', 'bn-mid', String(d.met));
+    el(met, 'small', 'is-met', 'met');
+    const missed = el(nums, 'span', 'bn-mid', String(d.missed));
+    el(missed, 'small', null, 'missed');
+    const dots = el(sec, 'div', 'bn-dots');
+    const sofar = d.days.filter(x => x.state !== 'future').length;
+    dots.setAttribute('role', 'img');
+    dots.setAttribute('aria-label', `${d.met} of ${sofar} ${sofar === 1 ? 'day' : 'days'} in ${d.month} so far had a meditation note`);
+    for (const day of d.days) el(dots, 'i', `bn-dd is-${day.state}`);
+  }
+
+  function renderRecent(parent, idx, today) {
+    const { sec, head } = card(parent, 'bn-recent', 'Recent notes', 'Pick up where you left off');
+    if (idx.recent.length > RECENT_SHORT) {
+      button(head, 'bn-pill bn-pill-grey bn-pill-btn', state.recentAll ? 'Fewer' : 'See all', () => toggle('recentAll'))
+        .setAttribute('aria-expanded', String(state.recentAll));
+    }
+    const list = el(sec, 'div', 'bn-list');
+    for (const n of state.recentAll ? idx.recent : idx.recent.slice(0, RECENT_SHORT)) {
+      /* A study is as recent as its latest session. */
+      const when = (n.kind === 'study' && S.sessionDates(n.body).slice(-1)[0]) || n.date;
+      const r = el(list, 'button', 'bn-rrow');
+      r.type = 'button';
+      icon(el(r, 'span', 'bn-kicon' + (when === today ? ' is-today' : '')), kindOf(n.kind).icon);
+      el(r, 'span', 'bn-rrow-t', n.title);
+      const p = firstPassage(n);
+      if (p) el(r, 'span', 'bn-pill bn-pill-grey bn-pill-sm bn-rrow-p', p);
+      el(r, 'span', 'bn-rrow-d', when ? D.shortDate(when, today) : '');
+      r.addEventListener('click', () => store.openPath(n.path));
+    }
+  }
+
+  /* Notes this month by kind, as a donut with its legend. Each kind keeps
+     its own fill: Sunday ink, meditation green, community and study greys. */
+  function renderKinds(parent, idx, today) {
+    const k = S.kindMix(idx.notes, today);
+    const { sec } = card(parent, 'bn-kinds', 'What you wrote', `Notes in ${k.month}, by kind`);
+    if (!k.total) {
+      el(sec, 'p', 'bn-hint', `Nothing written in ${k.month} yet.`);
+      return;
+    }
+    const wrap = el(sec, 'div', 'bn-donut');
+    const shown = k.kinds.filter(x => x.count);
+    const chart = svg(wrap, 'svg', { viewBox: '0 0 120 120', class: 'bn-donut-svg', role: 'img', 'aria-label': `${plural(k.total, 'note')} in ${k.month}: ${shown.map(x => `${x.label.toLowerCase()} ${x.count}`).join(', ')}` });
+    const g = svg(chart, 'g', { transform: 'rotate(-90 60 60)' });
+    const C = 2 * Math.PI * 48;
+    const gap = shown.length > 1 ? 2.5 : 0;
+    let off = 0;
+    for (const x of shown) {
+      const len = (x.count / k.total) * C;
+      svg(g, 'circle', { cx: 60, cy: 60, r: 48, class: `bn-arc is-${x.kind}`, 'stroke-dasharray': `${Math.max(0.5, len - gap).toFixed(2)} ${C.toFixed(2)}`, 'stroke-dashoffset': (-off).toFixed(2) });
+      off += len;
+    }
+    const total = svg(chart, 'text', { x: 60, y: 60, class: 'bn-donut-n', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
+    total.textContent = String(k.total);
+    const legend = el(wrap, 'div', 'bn-donut-l');
+    for (const x of k.kinds) {
+      el(legend, 'i', `bn-key is-${x.kind}`).setAttribute('aria-hidden', 'true');
+      el(legend, 'span', x.count ? null : 'bn-faint', x.label);
+      el(legend, 'strong', x.count ? null : 'bn-faint', String(x.count));
+    }
+  }
+
+  /* Series as progress bars: parts written, against the longest shown. */
+  function renderSeries(parent, idx, today) {
+    const bars = S.seriesBars(idx.series, today, 3);
+    const { sec } = card(parent, 'bn-series', 'Series', 'Parts you’ve written');
+    if (!bars.length) {
+      el(sec, 'p', 'bn-hint', 'Give Sunday notes a series and follow it here, part by part.');
+      return;
+    }
+    const list = el(sec, 'div', 'bn-series-l');
+    for (const b of bars) {
+      const r = el(list, 'button', 'bn-srow');
+      r.type = 'button';
+      const top = el(r, 'span', 'bn-srow-top');
+      el(top, 'span', 'bn-srow-n', b.name);
+      el(top, 'span', 'bn-srow-p', b.today ? `Part ${b.parts} today` : plural(b.parts, 'part'));
+      const track = el(r, 'span', 'bn-track');
+      el(track, 'span', 'bn-fill' + (b.active ? ' is-active' : '')).style.setProperty('--bn-w', `${Math.round(b.ratio * 100)}%`);
+      r.setAttribute('aria-label', `${b.name}, ${plural(b.parts, 'part')}. Opens the latest part`);
+      r.addEventListener('click', () => store.openPath(b.path));
+    }
   }
 
   function renderEmpty(parent) {
-    const sec = el(parent, 'section', 'bn-empty');
+    const sec = el(parent, 'section', 'bn-card bn-empty');
     icon(sec, 'book-open', 'bn-empty-icon');
-    el(sec, 'h2', null, 'Nothing here yet');
-    el(sec, 'p', null, 'Every passage you write becomes a thread you can pull later. Your first note starts above.');
+    el(sec, 'h2', 'bn-lbl', 'Nothing here yet');
+    el(sec, 'p', 'bn-sub', 'Every passage you write becomes a thread you can pull later. Your first note starts above.');
     if (state.adoptCount > 0 && !ctx.plugin.settings.adoptDismissed) {
-      const card = el(parent, 'section', 'bn-glass bn-adopt-card');
-      const head = el(card, 'div', 'bn-adopt-head');
-      el(head, 'span', 'bn-adopt-emoji', '🗂️').setAttribute('aria-hidden', 'true');
-      const t = el(head, 'div');
+      const card2 = el(parent, 'section', 'bn-card bn-adopt-card');
       const one = state.adoptCount === 1;
       const what = state.adoptSermons ? (one ? 'a sermon note' : 'sermon notes') : (one ? 'it belongs here' : 'they belong here');
-      el(t, 'h2', null, `${plural(state.adoptCount, 'note')} in your vault look${one ? 's' : ''} like ${what}`);
-      el(t, 'p', null, one ? 'Adopting adds one property to it. Nothing else in it changes.' : 'Adopting adds one property to each. Nothing else in them changes.');
-      const acts = el(card, 'div', 'bn-adopt-actions');
+      el(card2, 'h2', 'bn-lbl', `${plural(state.adoptCount, 'note')} in your vault look${one ? 's' : ''} like ${what}`);
+      el(card2, 'p', 'bn-sub', one ? 'Adopting adds one property to it. Nothing else in it changes.' : 'Adopting adds one property to each. Nothing else in them changes.');
+      const acts = el(card2, 'div', 'bn-adopt-actions');
       button(acts, 'mod-cta bn-btn', 'Review and adopt', () => ctx.plugin.openAdopt());
       button(acts, 'bn-btn bn-btn-quiet', 'Not now', async () => { ctx.plugin.settings.adoptDismissed = true; await ctx.plugin.saveSettings(); render(); });
     }
@@ -368,30 +487,20 @@ function mountHome(container, ctx) {
     const now = ctx.now ? ctx.now() : new Date();
     const today = D.todayISO(now);
     const hour = now.getHours();
-    root.classList.toggle('bn-wide', root.clientWidth >= 760);
-    /* On the root, and on the scroller behind it (the ground's glows take
-       the accent from there). */
-    const green = accentOf(ctx.plugin && ctx.plugin.settings) === 'green';
-    root.classList.toggle(ACCENT_GREEN, green);
-    container.classList.toggle(ACCENT_GREEN, green);
+    size();
     clear(root);
-    renderSearch(root);
-    const head = el(root, 'header', 'bn-home-head');
-    el(head, 'h1', 'bn-h1', greeting(hour));
-    el(head, 'p', 'bn-when', [D.stampDate(today), churchOf(idx)].filter(Boolean).join(' · '));
-    const top = el(root, 'div', 'bn-top');
-    renderStreak(top, idx, now, today);
-    renderStart(top, idx, today, hour);
+    renderBar(root, idx, today);
+    const hello = el(root, 'header', 'bn-hello');
+    el(hello, 'h1', 'bn-h1', greeting(hour));
+    el(hello, 'p', 'bn-sub', idx.notes.length ? S.weekInsight(idx.notes, today) : 'Sunday, community, morning meditation and Bible study, in one place.');
+    const tiles = el(root, 'div', 'bn-tiles' + (idx.notes.length ? '' : ' is-solo'));
+    renderStart(tiles, idx, now, today, hour);
     if (!idx.notes.length) { renderEmpty(root); return; }
-    const cols = el(root, 'div', 'bn-cols');
-    const a = el(cols, 'div', 'bn-col');
-    const b = el(cols, 'div', 'bn-col');
-    renderOpen(a, idx, today);
-    renderPrayer(a, idx, today);
-    renderRecent(b, idx, today);
-    renderSeries(b, idx, today);
-    renderPassages(root, idx, today);
-    renderStatus(root, idx);
+    const draw = {
+      open: renderOpen, pray: renderPrayer, week: renderWeek, index: renderIndex,
+      days: renderDays, recent: renderRecent, kinds: renderKinds, series: renderSeries,
+    };
+    for (const id of shownTiles(ctx.plugin && ctx.plugin.settings)) draw[id](tiles, idx, today);
   }
 
   const unsub = store.subscribe(() => render());
@@ -409,4 +518,4 @@ function mountHome(container, ctx) {
   };
 }
 
-module.exports = { mountHome, greeting, emphasis };
+module.exports = { mountHome, greeting, emphasis, weekRange };
