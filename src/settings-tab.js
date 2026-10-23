@@ -1,10 +1,10 @@
 'use strict';
 /* Settings: where each kind's new notes go, the template folder, the
-   BibleHub translation, the church a Sunday note starts with, and where
-   passage chips appear. */
+   BibleHub translation, the church a Sunday note starts with, where passage
+   chips appear, and the accent colour. */
 
 const { PluginSettingTab, Setting, normalizePath } = require('obsidian');
-const { KINDS } = require('./constants');
+const { KINDS, ACCENTS, accentOf } = require('./constants');
 
 /* A typed folder, normalised — but empty stays empty (normalizePath('')
    would be '/', the vault root). */
@@ -61,6 +61,15 @@ class BibleNotesSettingTab extends PluginSettingTab {
       .setName('Church')
       .setDesc('A new Sunday note carries over the last one’s church, speaker and series. This is used when the last one has no church.')
       .addText(t => t.setValue(s.church).onChange(async v => { s.church = v.trim(); await save(); }));
+
+    new Setting(containerEl).setName('Appearance').setHeading();
+    new Setting(containerEl)
+      .setName('Accent')
+      .setDesc('The colour of passage chips, the streak and highlights in Bible Notes.')
+      .addDropdown(d => {
+        for (const [v, label] of ACCENTS) d.addOption(v, label);
+        d.setValue(accentOf(s)).onChange(async v => { s.accent = v; await save(); this.plugin.applyAccent(); });
+      });
 
     new Setting(containerEl).setName('Existing notes').setHeading();
     new Setting(containerEl)

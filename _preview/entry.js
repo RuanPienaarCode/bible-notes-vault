@@ -4,6 +4,7 @@
    public.
      ?theme=dark      Obsidian's theme-dark class
      ?empty=1         a vault with no Bible Notes yet (first run + adopt card)
+     ?accent=green    the green accent (default indigo)
      ?now=2026-10-25T08:30   the clock Home reads (default: that Sunday morning)
      ?open=<path>     open a note in the right-hand pane */
 import { makeMemoryVault } from './memory-vault.js';
@@ -47,13 +48,14 @@ const vault = makeMemoryVault(q.get('empty') ? OTHER : { ...NOTES, ...OTHER });
 
 let noteView = null;
 const plugin = {
-  settings: { ...DEFAULT_SETTINGS, folders: { ...DEFAULT_SETTINGS.folders }, church: 'Grace Church' },
+  settings: { ...DEFAULT_SETTINGS, folders: { ...DEFAULT_SETTINGS.folders }, church: 'Grace Church', accent: q.get('accent') === 'green' ? 'green' : 'indigo' },
   focusTitleFor: null,
   async saveSettings() {},
   async openAdopt() { new AdoptModal(plugin.app, plugin, await plugin.store.adoptScan()).open(); },
 };
 plugin.app = {
   vault,
+  commands: { executeCommandById: id => { console.log('[command]', id); window.__lastCommand = id; } },
   workspace: {
     getLeaf: () => ({ openFile: f => openNote(f.path) }),
     getLeavesOfType: t => (t === 'markdown' && noteView ? [{ view: noteView }] : []),

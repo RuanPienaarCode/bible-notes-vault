@@ -10,7 +10,8 @@
     "preview": "node _preview/build.mjs"
   },
   "devDependencies": {
-    "esbuild": "0.25.10"
+    "esbuild": "0.25.10",
+    "geist": "1.8.2"
   },
   "engines": {
     "node": ">=18"

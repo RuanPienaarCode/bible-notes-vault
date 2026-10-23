@@ -29,7 +29,16 @@ const DEFAULT_SETTINGS = {
   translation: 'niv',
   church: '',
   chipsEverywhere: true,
+  accent: 'indigo',
   templatesWritten: false,
 };
 
-module.exports = { KIND_KEY, VIEW_TYPE, KINDS, KIND_IDS, kindOf, DEFAULT_SETTINGS };
+/* The one accent colour at a time (Settings → Appearance). Indigo is the
+   default; green puts `bn-accent-green` on the plugin's roots, and styles.css
+   swaps the accent tokens under it. */
+const ACCENTS = [['indigo', 'Indigo'], ['green', 'Green']];
+const ACCENT_GREEN = 'bn-accent-green';
+const accentOf = settings => (settings && settings.accent === 'green' ? 'green' : 'indigo');
+const accentClass = settings => (accentOf(settings) === 'green' ? ACCENT_GREEN : '');
+
+module.exports = { KIND_KEY, VIEW_TYPE, KINDS, KIND_IDS, kindOf, DEFAULT_SETTINGS, ACCENTS, ACCENT_GREEN, accentOf, accentClass };

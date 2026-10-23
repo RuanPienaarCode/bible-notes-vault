@@ -2,18 +2,19 @@
    gym-vault and budget-vault). BOTH root main.js and root styles.css are
    BUILD OUTPUT:
      main.js    <- bundled from src/*.js
-     styles.css <- copied from src/styles.css
+     styles.css <- src/styles.css with Geist + Geist Mono inlined (scripts/styles.mjs)
    An edit made directly to a root artifact is lost on the next build. */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import * as esbuild from 'esbuild';
+import { buildStyles } from './scripts/styles.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const rel = p => join(root, p);
 
-writeFileSync(rel('styles.css'), readFileSync(rel('src/styles.css'), 'utf8'));
+writeFileSync(rel('styles.css'), buildStyles(root));
 
 /* target safari15 = the engine floor this plugin must parse on (Obsidian
    mobile runs the OS WebView; minAppVersion is not the floor). format cjs +

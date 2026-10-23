@@ -1,186 +1,393 @@
 /* ============================================================================
-   Bible Notes — Notion-pure, with Editorial's answered-prayer moment and
-   passage index. Ground, text and borders come from the theme's own
-   variables, so the page sits inside any Obsidian theme; the tag tints are
-   Notion's, in light and dark. Every class is prefixed bn-.
+   Bible Notes — Dev Glass. A near-black (or cool zinc) ground with a faint
+   grid, translucent zinc panels with 1px hairlines, one accent (indigo, or
+   green from Settings), four small kind signals and the answered-prayer diff
+   green. Geist for the interface, Geist Mono for dates, passages, counts and
+   property keys. Every class is prefixed bn-.
+
+   Geist and Geist Mono: Copyright (c) 2023 Vercel, in collaboration with
+   basement.studio. SIL Open Font License 1.1 (fonts/OFL.txt). The font files
+   are inlined below at build time.
+
+   Colours are tokens on `body` and `body.theme-dark`. The plugin's own roots
+   (.bn-home, .bn-cover, .bn-popover) also point Obsidian's variables at these
+   tokens, so the host's own rules (buttons, inputs, checkboxes) paint in this
+   palette instead of being fought one by one.
+
+   Blur (backdrop-filter) is on the Home panels, the cover header and the
+   passage card only. The note's own text area has none.
    ============================================================================ */
 
+/* @bn-fonts */
+
 body {
-  --bn-orange-bg: #fbecdd; --bn-orange: #8a4a12;
-  --bn-green-bg: #dbeddb;  --bn-green: #2b593f;
-  --bn-blue-bg: #d3e5ef;   --bn-blue: #1f4f6e;
-  --bn-purple-bg: #e8deee; --bn-purple: #5a3a73;
-  --bn-chip-bg: rgba(55, 53, 47, 0.08);
-  --bn-band-sunday: #f3eee7; --bn-band-community: #e9eff3; --bn-band-meditation: #edf3ec; --bn-band-study: #f0ecf3;
-  --bn-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
-  --bn-radius: 8px;
+  --bn-f-ui: "Bible Notes Geist", -apple-system, system-ui, sans-serif;
+  --bn-f-mono: "Bible Notes Geist Mono", ui-monospace, Menlo, monospace;
+
+  /* light: cool zinc */
+  --bn-bg: #f4f4f6; --bn-panel: rgba(255, 255, 255, 0.72); --bn-panel-hi: rgba(24, 24, 27, 0.045);
+  --bn-line: rgba(24, 24, 27, 0.11); --bn-line-hi: rgba(24, 24, 27, 0.22); --bn-hl: rgba(255, 255, 255, 0.95);
+  --bn-sheet: rgba(255, 255, 255, 0.92); --bn-ink: #18181b; --bn-muted: #52525b; --bn-faint: #65656e;
+  --bn-grid: rgba(24, 24, 27, 0.04); --bn-cell: rgba(24, 24, 27, 0.07); --bn-shadow: 0 8px 24px rgba(24, 24, 27, 0.08);
+  /* kind signals */
+  --bn-sun: #ea580c; --bn-sun-g: rgba(234, 88, 12, 0.12);
+  --bn-com: #2563eb; --bn-com-g: rgba(37, 99, 235, 0.12);
+  --bn-med: #059669; --bn-med-g: rgba(5, 150, 105, 0.12);
+  --bn-stu: #9333ea; --bn-stu-g: rgba(147, 51, 234, 0.12);
+  /* answered prayer: a diff green, independent of the accent */
+  --bn-add: #1a7f37; --bn-add-ink: #116329; --bn-add-on: #ffffff;
+  --bn-add-bg: rgba(46, 160, 67, 0.1); --bn-add-bg2: rgba(46, 160, 67, 0.2); --bn-add-glow: rgba(46, 160, 67, 0.14);
+  --bn-add-line: rgba(26, 127, 55, 0.4); --bn-add-line2: rgba(26, 127, 55, 0.28);
+  /* accent: electric indigo */
+  --bn-acc: #4f46e5; --bn-acc-ink: #4338ca; --bn-acc-on: #ffffff;
+  --bn-a1: rgba(79, 70, 229, 0.08); --bn-a2: rgba(79, 70, 229, 0.17); --bn-a3: rgba(79, 70, 229, 0.34);
+  --bn-glow1: rgba(79, 70, 229, 0.15); --bn-glow2: rgba(79, 70, 229, 0.07); --bn-focus: #4338ca;
 }
 body.theme-dark {
-  --bn-orange-bg: #5c3b23; --bn-orange: #f3cfb0;
-  --bn-green-bg: #2b4232;  --bn-green: #bfe0c6;
-  --bn-blue-bg: #28456c;   --bn-blue: #c4dcf2;
-  --bn-purple-bg: #492f64; --bn-purple: #e0cdf0;
-  --bn-chip-bg: rgba(255, 255, 255, 0.08);
-  --bn-band-sunday: #2a2621; --bn-band-community: #212830; --bn-band-meditation: #222a23; --bn-band-study: #29232e;
+  --bn-bg: #09090b; --bn-panel: rgba(255, 255, 255, 0.05); --bn-panel-hi: rgba(255, 255, 255, 0.08);
+  --bn-line: rgba(255, 255, 255, 0.1); --bn-line-hi: rgba(255, 255, 255, 0.2); --bn-hl: rgba(255, 255, 255, 0.08);
+  --bn-sheet: rgba(17, 17, 21, 0.92); --bn-ink: #ededf0; --bn-muted: #a1a1aa; --bn-faint: #8a8a93;
+  --bn-grid: rgba(255, 255, 255, 0.03); --bn-cell: rgba(255, 255, 255, 0.06); --bn-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --bn-sun: #fb923c; --bn-sun-g: rgba(251, 146, 60, 0.2);
+  --bn-com: #60a5fa; --bn-com-g: rgba(96, 165, 250, 0.2);
+  --bn-med: #34d399; --bn-med-g: rgba(52, 211, 153, 0.2);
+  --bn-stu: #c084fc; --bn-stu-g: rgba(192, 132, 252, 0.2);
+  --bn-add: #3fb950; --bn-add-ink: #56d364; --bn-add-on: #04130a;
+  --bn-add-bg: rgba(46, 160, 67, 0.12); --bn-add-bg2: rgba(46, 160, 67, 0.22); --bn-add-glow: rgba(46, 160, 67, 0.22);
+  --bn-add-line: rgba(63, 185, 80, 0.4); --bn-add-line2: rgba(63, 185, 80, 0.28);
+  --bn-acc: #6366f1; --bn-acc-ink: #a5b4fc; --bn-acc-on: #ffffff;
+  --bn-a1: rgba(99, 102, 241, 0.14); --bn-a2: rgba(99, 102, 241, 0.28); --bn-a3: rgba(99, 102, 241, 0.5);
+  --bn-glow1: rgba(99, 102, 241, 0.3); --bn-glow2: rgba(99, 102, 241, 0.14); --bn-focus: #a5b4fc;
+}
+/* Accent: green. Set on the plugin's roots (Home, cover, passage card) and on
+   every markdown leaf, so passage chips follow it too. The variables are
+   redefined on the element itself, which beats the value inherited from body. */
+.bn-accent-green {
+  --bn-acc: #15803d; --bn-acc-ink: #166534; --bn-acc-on: #ffffff;
+  --bn-a1: rgba(21, 128, 61, 0.08); --bn-a2: rgba(21, 128, 61, 0.17); --bn-a3: rgba(21, 128, 61, 0.34);
+  --bn-glow1: rgba(21, 128, 61, 0.14); --bn-glow2: rgba(21, 128, 61, 0.07); --bn-focus: #166534;
+}
+body.theme-dark .bn-accent-green {
+  --bn-acc: #22c55e; --bn-acc-ink: #4ade80; --bn-acc-on: #052e16;
+  --bn-a1: rgba(34, 197, 94, 0.13); --bn-a2: rgba(34, 197, 94, 0.26); --bn-a3: rgba(34, 197, 94, 0.46);
+  --bn-glow1: rgba(34, 197, 94, 0.24); --bn-glow2: rgba(34, 197, 94, 0.11); --bn-focus: #4ade80;
 }
 
-.tone-orange { background: var(--bn-orange-bg); color: var(--bn-orange); }
-.tone-green  { background: var(--bn-green-bg);  color: var(--bn-green); }
-.tone-blue   { background: var(--bn-blue-bg);   color: var(--bn-blue); }
-.tone-purple { background: var(--bn-purple-bg); color: var(--bn-purple); }
+/* Kind signals: a dot, a left rule, a glow behind the emoji tile. */
+.bn-k-sunday { --bn-k: var(--bn-sun); --bn-kg: var(--bn-sun-g); }
+.bn-k-community { --bn-k: var(--bn-com); --bn-kg: var(--bn-com-g); }
+.bn-k-meditation { --bn-k: var(--bn-med); --bn-kg: var(--bn-med-g); }
+.bn-k-study { --bn-k: var(--bn-stu); --bn-kg: var(--bn-stu-g); }
+
+/* The three roots: our palette under Obsidian's variable names, and the font
+   scoped here (never on body). The doubled class beats any single-class host
+   rule. */
+.bn-home.bn-home, .bn-cover.bn-cover, .bn-popover.bn-popover {
+  --text-normal: var(--bn-ink); --text-muted: var(--bn-muted); --text-faint: var(--bn-faint);
+  --interactive-accent: var(--bn-acc); --interactive-accent-hover: var(--bn-acc); --text-on-accent: var(--bn-acc-on);
+  --background-modifier-border: var(--bn-line); --background-modifier-border-hover: var(--bn-line-hi);
+  --background-modifier-border-focus: var(--bn-acc-ink); --background-modifier-hover: var(--bn-panel-hi);
+  --background-modifier-form-field: var(--bn-panel-hi);
+  --checkbox-radius: 6px; --checkbox-size: 20px; --checkbox-color: var(--bn-add); --checkbox-color-hover: var(--bn-add);
+  --checkbox-marker-color: var(--bn-add-on); --checkbox-border-color: var(--bn-line-hi); --checkbox-border-color-hover: var(--bn-muted);
+  color: var(--bn-ink); font-family: var(--bn-f-ui); font-variant-numeric: tabular-nums;
+}
 
 .bn-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .bn-icon svg { width: 16px; height: 16px; }
 .bn-grow { flex: 1 1 auto; min-width: 0; }
 .bn-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bn-dim { color: var(--text-muted); font-size: 12.5px; }
+.bn-dim { color: var(--bn-muted); font-size: 12.5px; font-family: var(--bn-f-mono); }
+
+/* A translucent zinc panel with a hairline and an inner top highlight. */
+.bn-glass {
+  background: var(--bn-panel); border: 1px solid var(--bn-line); border-radius: 14px;
+  box-shadow: inset 0 1px 0 var(--bn-hl), var(--bn-shadow); overflow: hidden; box-sizing: border-box;
+}
+/* Blur: Home panels, the cover header and the passage card — nowhere else.
+   -webkit- first: iOS WebKit before 18 knows only the prefixed property. */
+.bn-home .bn-glass, .bn-cover .bn-hdr, .bn-popover.bn-popover {
+  -webkit-backdrop-filter: blur(16px) saturate(140%); backdrop-filter: blur(16px) saturate(140%);
+}
+/* Not on a phone: the ground behind the panels is nearly flat, so the blur
+   barely shows, while iOS 15–16 re-blurs every panel on every scroll frame
+   inside an overflow scroller (flicker, dropped layers). */
+.is-phone .bn-home.bn-home .bn-glass, .is-phone .bn-cover.bn-cover .bn-hdr {
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+
+.bn-dot { display: inline-block; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--bn-k, var(--bn-muted)); }
+.bn-kbd {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box;
+  min-width: 24px; height: 24px; padding: 0 6px; border: 1px solid var(--bn-line-hi); border-bottom-width: 2px;
+  border-radius: 6px; background: var(--bn-panel-hi); color: var(--bn-muted); font: 500 12.5px var(--bn-f-mono);
+}
+/* Scripture chips, in the text and in the cover: a key cap in mono. */
+.bn-keycap, .bn-ref, .markdown-rendered a.bn-ref {
+  padding: 0 6px; border: 1px solid var(--bn-line-hi); border-bottom-width: 2px; border-radius: 6px;
+  background: var(--bn-panel-hi); color: var(--bn-acc-ink); font-family: var(--bn-f-mono); font-weight: 500;
+  white-space: nowrap; text-decoration: none; cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+.bn-ref, .markdown-rendered a.bn-ref { font-size: 0.86em; }
+.bn-keycap { display: inline-flex; align-items: center; font-size: 13px; line-height: 1.6; }
+@media (hover: hover) {
+  .bn-ref:hover, .markdown-rendered a.bn-ref:hover { background: var(--bn-a2); text-decoration: none; }
+}
+.bn-pill {
+  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 7px; border-radius: 6px; box-sizing: border-box;
+  border: 1px solid var(--bn-line); background: var(--bn-panel-hi); color: var(--bn-muted);
+  font: 400 12.5px/1 var(--bn-f-mono); white-space: nowrap;
+}
+.bn-pill-bad { background: none; color: var(--bn-faint); text-decoration: underline dotted; }
+.bn-tok {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 26px; padding: 0 9px; box-sizing: border-box;
+  border: 1px solid var(--bn-line); border-radius: 7px; background: var(--bn-panel-hi); font: 400 13.5px var(--bn-f-ui);
+}
+.bn-tok .bn-dot { width: 7px; height: 7px; }
+.bn-tok em { font: 400 12.5px var(--bn-f-mono); font-style: normal; color: var(--bn-muted); }
+.bn-tok.is-linked { color: var(--bn-acc-ink); }
 
 /* Buttons that are rows, chips or links: Obsidian's own button chrome off.
    Every rule under the three roots doubles its root class (.bn-home.bn-home …):
    Obsidian's tablet/phone `.is-tablet button:not(.clickable-icon)` is 0,2,1
-   and would otherwise win padding and height on every button here. */
-.bn-home.bn-home .bn-row, .bn-home.bn-home .bn-lead, .bn-home.bn-home .bn-kind, .bn-home.bn-home .bn-more, .bn-home.bn-home .bn-index-ch,
-.bn-home.bn-home .bn-answered, .bn-home.bn-home .bn-task-meta,
-.bn-cover.bn-cover .bn-prop-btn, .bn-cover.bn-cover .bn-link, .bn-cover.bn-cover .bn-carry, .bn-cover.bn-cover .bn-chip, .bn-cover.bn-cover .bn-prop-edit,
-.bn-cover.bn-cover .bn-task-meta, .bn-popover.bn-popover .bn-pop-row, .bn-adopt-card .bn-btn-quiet, .bn-modal-actions .bn-btn-quiet {
+   and would otherwise win padding and height on every button here. The
+   rules that follow put back what each one needs. */
+.bn-home.bn-home .bn-row, .bn-home.bn-home .bn-cmd, .bn-home.bn-home .bn-pal, .bn-home.bn-home .bn-more, .bn-home.bn-home .bn-lg,
+.bn-home.bn-home .bn-tile, .bn-home.bn-home .bn-diff, .bn-home.bn-home .bn-task-meta,
+.bn-cover.bn-cover .bn-row, .bn-cover.bn-cover .bn-prop-btn, .bn-cover.bn-cover .bn-link, .bn-cover.bn-cover .bn-carry, .bn-cover.bn-cover .bn-chip,
+.bn-cover.bn-cover .bn-prop-edit, .bn-cover.bn-cover .bn-task-meta, .bn-popover.bn-popover .bn-pop-row,
+.bn-home.bn-home .bn-adopt-card .bn-btn-quiet, .bn-cover.bn-cover .bn-cover-tools .bn-btn-quiet, .bn-modal-actions .bn-btn-quiet {
   font: inherit; color: inherit; background: none; box-shadow: none; border: 0; height: auto;
-  padding: 0; margin: 0; text-align: left; cursor: pointer; border-radius: 6px; -webkit-tap-highlight-color: transparent;
+  padding: 0; margin: 0; text-align: left; white-space: normal; cursor: pointer; border-radius: 6px; -webkit-tap-highlight-color: transparent;
 }
-.bn-home.bn-home button:focus-visible, .bn-cover.bn-cover button:focus-visible, .bn-popover.bn-popover button:focus-visible, .bn-ref:focus-visible {
-  outline: 2px solid var(--interactive-accent); outline-offset: 1px;
+.bn-home.bn-home button:focus-visible, .bn-cover.bn-cover button:focus-visible, .bn-popover.bn-popover button:focus-visible, .bn-ref:focus-visible,
+.bn-home.bn-home .bn-check:focus-visible {
+  outline: 2px solid var(--bn-focus); outline-offset: 2px;
 }
 /* iOS 15.0–15.3 has no :focus-visible (and drops a rule that names it):
    plain :focus there, so keyboard users still see where they are. */
 @supports not selector(:focus-visible) {
-  .bn-home.bn-home button:focus, .bn-cover.bn-cover button:focus, .bn-popover.bn-popover button:focus, .bn-ref:focus {
-    outline: 2px solid var(--interactive-accent); outline-offset: 1px;
+  .bn-home.bn-home button:focus, .bn-cover.bn-cover button:focus, .bn-popover.bn-popover button:focus, .bn-ref:focus,
+  .bn-home.bn-home .bn-check:focus {
+    outline: 2px solid var(--bn-focus); outline-offset: 2px;
   }
 }
 
-.bn-pill {
-  display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 7px; border-radius: 4px;
-  font-size: 12.5px; line-height: 1; white-space: nowrap; background: var(--bn-chip-bg); color: var(--text-muted);
-}
-.bn-pill.tone-blue { background: var(--bn-blue-bg); color: var(--bn-blue); }
-.bn-pill.tone-purple { background: var(--bn-purple-bg); color: var(--bn-purple); }
-.bn-pill-bad { background: none; color: var(--text-faint); box-shadow: inset 0 0 0 1px var(--background-modifier-border); text-decoration: underline dotted; }
-
 /* ---------------------------------------------------------------- Home --- */
-.workspace-leaf-content .view-content.bn-home-view { padding: 0; }
+/* The ground: near-black or zinc, a faint 32px grid and two dim accent glows
+   so the blur has something to bite on. On the scroller itself, so the glows
+   stay put while the panels move over them. The data-type selector (0,4,0)
+   beats the host's `.workspace-split.mod-root .view-content` background. */
+.workspace-leaf-content[data-type="bible-notes-home"] .view-content.bn-home-view {
+  padding: 0; background-color: var(--bn-bg);
+  background-image:
+    radial-gradient(70% 28% at 10% 0%, var(--bn-glow1) 0, transparent 72%),
+    radial-gradient(60% 26% at 105% 48%, var(--bn-glow2) 0, transparent 72%),
+    linear-gradient(var(--bn-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bn-grid) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  background-position: 0 0, 0 0, 0 0, 0 0;
+}
 .bn-home.bn-home {
-  box-sizing: border-box; max-width: 1000px; margin: 0 auto; padding: 40px 22px 72px;
-  display: flex; flex-direction: column; gap: 32px; color: var(--text-normal); font-size: 15px; line-height: 1.4;
+  box-sizing: border-box; max-width: 1000px; margin: 0 auto; padding: 28px 22px 64px;
+  display: flex; flex-direction: column; gap: 22px; font-size: 15px; line-height: 1.4;
 }
-.bn-home-head { display: flex; flex-direction: column; gap: 4px; }
-.bn-page-icon { font-size: 44px; line-height: 1; }
-.bn-home.bn-home .bn-h1 { margin: 14px 0 0; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.15; }
-.bn-today { margin: 0; font-size: 15px; }
+.bn-home-head { margin: 0; }
+.bn-home.bn-home .bn-h1 { margin: 0; font: 600 32px/1.12 var(--bn-f-ui); letter-spacing: -0.03em; color: var(--bn-ink); }
+.bn-when { margin: 6px 0 0; font: 400 13px var(--bn-f-mono); color: var(--bn-muted); }
 
-.bn-sec { display: flex; flex-direction: column; }
-.bn-sec-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-.bn-label { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.01em; color: var(--text-muted); }
-.bn-count { font-size: 12px; color: var(--text-muted); }
-
-.bn-start { gap: 10px; }
-.bn-start .bn-sec-head { margin-bottom: 0; }
-.bn-home.bn-home .bn-lead {
-  display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--bn-radius); width: 100%;
-  transition: filter 120ms ease;
+/* The quick-switcher field. The key hint only where there is a keyboard. */
+.bn-home.bn-home .bn-cmd {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 0 10px 0 14px; box-sizing: border-box;
+  border: 1px solid var(--bn-line); border-radius: 14px; background: var(--bn-panel);
+  box-shadow: inset 0 1px 0 var(--bn-hl), var(--bn-shadow); color: var(--bn-muted); font: 400 15px var(--bn-f-ui);
 }
-.bn-home.bn-home .bn-lead.tone-orange { background: var(--bn-orange-bg); color: var(--bn-orange); }
-.bn-home.bn-home .bn-lead.tone-green { background: var(--bn-green-bg); color: var(--bn-green); }
-.bn-home.bn-home .bn-lead.tone-blue { background: var(--bn-blue-bg); color: var(--bn-blue); }
-.bn-home.bn-home .bn-lead.tone-purple { background: var(--bn-purple-bg); color: var(--bn-purple); }
-.bn-home.bn-home .bn-lead:hover { filter: brightness(0.97); }
-.bn-lead-emoji { font-size: 24px; line-height: 1; }
-.bn-lead-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-.bn-lead-text strong { font-size: 15px; font-weight: 600; }
-.bn-lead-sub { font-size: 13px; }
-.bn-kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.bn-kinds.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.bn-home.bn-home .bn-kind {
-  display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 72px; padding: 12px;
-  border: 1px solid var(--background-modifier-border); border-radius: var(--bn-radius); box-sizing: border-box;
+.bn-cmd-ico svg { width: 16px; height: 16px; }
+.bn-cmd-text { flex: 1; min-width: 0; }
+.bn-home.bn-home .bn-cmd .bn-cmd-kbd { display: none; }
+@media (hover: hover) {
+  .bn-home.bn-home .bn-cmd .bn-cmd-kbd { display: inline-flex; }
+  .bn-home.bn-home .bn-cmd:hover { border-color: var(--bn-line-hi); color: var(--bn-ink); }
 }
-.bn-home.bn-home .bn-kind:hover { background: var(--background-modifier-hover); }
-.bn-kind-emoji { font-size: 20px; line-height: 1; }
-.bn-kind-label { font-size: 14px; font-weight: 500; }
 
-.bn-cols { display: flex; flex-direction: column; gap: 32px; }
-.bn-col { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
-.bn-home.bn-wide .bn-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; }
-.bn-home.bn-wide .bn-kinds { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.bn-home.bn-wide .bn-kinds.is-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.bn-home.bn-wide { padding-top: 56px; }
-.bn-home.bn-wide .bn-h1 { font-size: 38px; }
-
-.bn-home.bn-home .bn-row, .bn-cover.bn-cover .bn-row {
-  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 8px; margin: 0 -8px;
-  width: calc(100% + 16px); box-sizing: border-box;
+.bn-top { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.bn-sec { display: flex; flex-direction: column; min-width: 0; }
+.bn-home.bn-home .bn-sec-head { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 10px; }
+.bn-home.bn-home .bn-label { margin: 0; font: 600 15px var(--bn-f-ui); letter-spacing: -0.01em; color: var(--bn-ink); }
+.bn-home.bn-home .bn-count {
+  min-width: 24px; height: 22px; padding: 0 7px; box-sizing: border-box; border-radius: 6px; border: 1px solid var(--bn-line);
+  background: var(--bn-panel-hi); color: var(--bn-muted); font: 500 12.5px/20px var(--bn-f-mono); text-align: center;
 }
-.bn-home.bn-home .bn-row:hover, .bn-cover.bn-cover .bn-row:hover { background: var(--background-modifier-hover); }
+.bn-list { display: flex; flex-direction: column; }
+
+.bn-cols { display: flex; flex-direction: column; gap: 22px; }
+.bn-col { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.bn-home.bn-wide { padding-top: 40px; }
+.bn-home.bn-wide .bn-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 40px; align-items: start; }
+.bn-home.bn-wide .bn-top { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 40px; align-items: start; }
+.bn-home.bn-wide .bn-h1 { font-size: 36px; }
+
+/* Sunday streak: a contribution graph. */
+.bn-streak { padding: 14px; }
+.bn-st-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+.bn-st-h strong { font: 600 17px var(--bn-f-ui); letter-spacing: -0.015em; }
+.bn-st-h span { font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-hm { display: flex; gap: 3px; }
+.bn-hm-c { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bn-hm-d { display: block; box-sizing: border-box; width: 100%; aspect-ratio: 1; border-radius: 4px; background: var(--bn-cell); }
+.bn-hm-d.is-sunday { background: var(--bn-acc); }
+.bn-hm-d.is-other { background: var(--bn-a3); }
+.bn-hm-d.is-today { border: 1.5px dashed var(--bn-acc-ink); }
+.bn-hm-d.is-today:not(.is-sunday):not(.is-other) { background: transparent; }
+.bn-hm-d.is-future { visibility: hidden; }
+.bn-hm-m { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); gap: 3px; margin-top: 8px; font: 400 12px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-hm-m span { grid-row: 1; grid-column: var(--bn-col) / span 3; white-space: nowrap; }
+.bn-hm-l { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-hm-l span { display: inline-flex; align-items: center; gap: 6px; }
+.bn-hm-key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--bn-cell); }
+.bn-hm-key.is-sunday { background: var(--bn-acc); }
+.bn-hm-key.is-other { background: var(--bn-a3); }
+
+/* Start: a command palette. */
+.bn-home.bn-home .bn-pal {
+  position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 8px 14px 8px 16px;
+  box-sizing: border-box; border-bottom: 1px solid var(--bn-line); border-radius: 0;
+}
+.bn-home.bn-home .bn-pal:last-child { border-bottom: 0; }
+.bn-pal::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px; border-radius: 2px; background: var(--bn-k); }
+.bn-home.bn-home .bn-pal.is-lead { background: var(--bn-panel-hi); }
+.bn-et {
+  flex: none; display: grid; place-items: center; width: 38px; height: 38px; box-sizing: border-box; border-radius: 10px;
+  border: 1px solid var(--bn-line); font-size: 20px; line-height: 1;
+  background: radial-gradient(30px 24px at 30% 20%, var(--bn-kg), transparent), var(--bn-panel-hi);
+}
+.bn-pal-t { flex: 1; min-width: 0; }
+.bn-pal-t strong { display: block; font: 500 16px/1.2 var(--bn-f-ui); }
+.bn-pal-t span { display: block; margin-top: 3px; font: 400 12.5px/1.3 var(--bn-f-mono); color: var(--bn-muted); word-break: break-word; overflow-wrap: anywhere; }
+
+/* Tasks: still open, praying for, and the cover's carry list. */
+.bn-row { display: flex; align-items: center; gap: 10px; min-height: 44px; box-sizing: border-box; }
+.bn-home.bn-home .bn-row, .bn-cover.bn-cover .bn-row { padding: 0 14px; width: 100%; }
 .bn-row-emoji { width: 22px; text-align: center; font-size: 16px; flex: none; }
 .bn-date { min-width: 34px; text-align: right; }
-.bn-task { cursor: pointer; }
-.bn-task .bn-check { margin: 0; flex: none; }
-.bn-task-text { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 9px 0; min-width: 0; }
-.bn-task-title { font-size: 15px; }
-.bn-home.bn-home .bn-task-meta, .bn-cover.bn-cover .bn-task-meta { align-self: flex-start; font-size: 12.5px; color: var(--text-muted); border-radius: 3px; }
-.bn-home.bn-home .bn-task-meta:hover, .bn-cover.bn-cover .bn-task-meta:hover { color: var(--text-normal); text-decoration: underline; text-underline-offset: 2px; }
-.bn-meta-emoji { display: inline-block; margin-right: 5px; font-size: 12px; text-decoration: none; }
-.bn-task.is-done .bn-task-title { color: var(--text-muted); text-decoration: line-through; }
-.bn-home.bn-home .bn-more { align-self: flex-start; margin-top: 4px; min-height: 32px; padding: 0 2px; font-size: 13px; color: var(--text-muted); }
-.bn-home.bn-home .bn-more:hover { color: var(--text-normal); }
-
-/* The answered moment — borrowed from the Editorial direction. */
-.bn-home.bn-home .bn-answered {
-  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; width: 100%;
-  margin-top: 12px; padding: 22px 18px; border-radius: var(--bn-radius); background: var(--bn-green-bg); color: var(--bn-green);
+.bn-home.bn-home .bn-task, .bn-cover.bn-cover .bn-task {
+  align-items: flex-start; gap: 12px; min-height: 56px; padding: 12px 14px; border-bottom: 1px solid var(--bn-line); border-radius: 0; cursor: pointer;
 }
-.bn-home.bn-home .bn-answered.is-new { animation: bn-rise 420ms ease-out; }
-.bn-answered-orn { font-family: var(--bn-serif); font-size: 22px; line-height: 1; }
-.bn-answered-text { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.bn-answered-kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
-.bn-answered-title { font-family: var(--bn-serif); font-style: italic; font-size: 20px; line-height: 1.3; color: var(--text-normal); }
-.bn-answered-sub { font-size: 12.5px; }
+.bn-home.bn-home .bn-task:last-child, .bn-cover.bn-cover .bn-task:last-child { border-bottom: 0; }
+.bn-task .bn-check { margin: 1px 0 0; flex: none; border-width: 1.5px; background-color: var(--bn-panel-hi); }
+.bn-task .bn-check:checked { background-color: var(--bn-add); }
+.bn-task-text { flex: 1; display: flex; flex-direction: column; gap: 5px; padding: 0; min-width: 0; font-size: 15.5px; line-height: 1.35; }
+.bn-task-title { font-size: 15.5px; word-break: break-word; overflow-wrap: anywhere; }
+.bn-home.bn-home .bn-task-meta, .bn-cover.bn-cover .bn-task-meta {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; max-width: 100%; text-align: left;
+  font: 400 12.5px/1.3 var(--bn-f-mono); color: var(--bn-muted); border-radius: 3px;
+}
+.bn-task.is-done .bn-task-title { color: var(--bn-muted); text-decoration: line-through; text-decoration-color: var(--bn-line-hi); }
+.bn-ft {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px; box-sizing: border-box; min-height: 44px;
+  padding: 0 8px 0 14px; font: 400 13px var(--bn-f-mono); color: var(--bn-muted);
+}
+.bn-home.bn-home .bn-ft .bn-more {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 6px; color: var(--bn-acc-ink); font: 500 13px var(--bn-f-mono);
+}
+.bn-home.bn-home .bn-more.bn-more-quiet {
+  align-self: flex-start; margin-top: 6px; min-height: 44px; padding: 0 4px; color: var(--bn-muted); font: 500 13px var(--bn-f-mono);
+}
+
+/* The answered prayer: a diff. "−" the request, "+" the answer. */
+.bn-home.bn-home .bn-diff {
+  display: block; position: relative; width: 100%; margin-top: 14px; padding: 0; box-sizing: border-box; overflow: hidden;
+  border: 1px solid var(--bn-add-line); border-radius: 12px; background: var(--bn-add-bg); box-shadow: 0 0 44px var(--bn-add-glow);
+}
+.bn-home.bn-home .bn-diff.is-new { animation: bn-rise 420ms ease-out; }
+.bn-diff-h { display: block; padding: 7px 12px; border-bottom: 1px solid var(--bn-add-line2); color: var(--bn-add-ink); font: 500 12.5px var(--bn-f-mono); }
+.bn-dl { display: flex; gap: 10px; padding: 9px 12px; font-size: 15.5px; line-height: 1.35; }
+.bn-dl i { flex: none; width: 12px; font: 500 14px var(--bn-f-mono); font-style: normal; color: var(--bn-muted); }
+.bn-dl.is-old { color: var(--bn-muted); }
+.bn-dl.is-add { background: var(--bn-add-bg2); color: var(--bn-ink); }
+.bn-dl.is-add i { color: var(--bn-add-ink); }
+.bn-diff-f { display: block; padding: 8px 12px 11px; font: 400 12.5px/1.4 var(--bn-f-mono); color: var(--bn-muted); }
 @keyframes bn-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .bn-home.bn-home .bn-answered.is-new { animation: none; } }
-.bn-answered-list { display: flex; flex-direction: column; }
-.bn-answered-mark { width: 22px; text-align: center; color: var(--bn-green); }
+@media (prefers-reduced-motion: reduce) { .bn-home.bn-home .bn-diff.is-new { animation: none; } }
+.bn-answered-mark { width: 22px; text-align: center; color: var(--bn-add-ink); font-family: var(--bn-f-mono); }
+.bn-home.bn-home .bn-answered-row { border-bottom: 1px solid var(--bn-line); border-radius: 0; }
+.bn-home.bn-home .bn-answered-row:last-child { border-bottom: 0; }
 
-/* Index of passages — also from Editorial: book, then chapters with counts. */
-.bn-index-row { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: baseline; min-height: 36px; font-size: 15px; }
-.bn-index-book { color: var(--text-normal); }
-.bn-index-chs { display: flex; flex-wrap: wrap; gap: 4px 6px; }
-.bn-home.bn-home .bn-index-ch {
-  display: inline-flex; align-items: baseline; min-height: 32px; min-width: 32px; padding: 0 6px; justify-content: center;
-  color: var(--bn-blue); font-weight: 500; font-variant-numeric: tabular-nums;
+/* Recent: a commit log, a rail down the left with a dot in the kind's colour. */
+.bn-home.bn-home .bn-lg {
+  position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: start; width: 100%;
+  min-height: 60px; padding: 12px 14px; box-sizing: border-box; border-bottom: 1px solid var(--bn-line); border-radius: 0;
 }
-.bn-home.bn-home .bn-index-ch:hover { background: var(--bn-blue-bg); }
-.bn-home.bn-home .bn-index-ch.is-open { background: var(--bn-blue-bg); }
-.bn-index-ch sup { font-size: 10px; margin-left: 1px; color: var(--text-muted); font-weight: 400; }
-.bn-index-notes { margin: 2px 0 10px 120px; padding-left: 14px; border-left: 2px solid var(--bn-blue-bg); }
+.bn-home.bn-home .bn-lg:last-child { border-bottom: 0; }
+.bn-lg .bn-dot { width: 10px; height: 10px; margin: 5px 0 0 4px; box-shadow: 0 0 0 3px var(--bn-kg); }
+.bn-lg::before, .bn-lg::after { content: ""; position: absolute; left: 23px; width: 1px; background: var(--bn-line-hi); }
+.bn-lg::before { top: 0; height: 17px; }
+.bn-lg::after { top: 30px; bottom: 0; }
+.bn-lg:first-child::before, .bn-lg:last-child::after { display: none; }
+.bn-lg-t { min-width: 0; }
+.bn-lg-t strong { display: block; font: 500 15.5px/1.25 var(--bn-f-ui); }
+.bn-lg-t span { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-lg .bn-keycap { align-self: start; margin-top: 1px; }
 
+/* The index of passages: heat tiles, warmer with more notes. */
+.bn-ix { display: grid; grid-template-columns: 104px minmax(0, 1fr); align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--bn-line); }
+.bn-ix:last-child { border-bottom: 0; }
+.bn-index-book { font: 500 13px var(--bn-f-mono); color: var(--bn-muted); word-break: break-word; overflow-wrap: anywhere; }
+.bn-ix-c { display: flex; flex-wrap: wrap; gap: 6px; }
+.bn-home.bn-home .bn-tile {
+  position: relative; display: grid; place-items: center; min-width: 48px; height: 44px; padding: 0 8px; box-sizing: border-box;
+  border: 1px solid var(--bn-line); border-radius: 8px; background: var(--bn-a1); color: var(--bn-ink); font: 500 15px var(--bn-f-mono);
+}
+.bn-home.bn-home .bn-tile.is-heat-2 { background: var(--bn-a2); }
+.bn-home.bn-home .bn-tile.is-heat-3 { background: var(--bn-a3); }
+.bn-home.bn-home .bn-tile.is-open { border-color: var(--bn-acc-ink); box-shadow: 0 0 0 2px var(--bn-a2); color: var(--bn-acc-ink); }
+.bn-tile sup { position: absolute; right: 4px; bottom: 2px; font: 500 11.5px/1 var(--bn-f-mono); color: var(--bn-muted); }
+.bn-index-notes { display: flex; flex-direction: column; padding: 2px 0 6px; border-bottom: 1px solid var(--bn-line); background: var(--bn-panel-hi); }
+.bn-index-notes:last-child { border-bottom: 0; }
+.bn-home.bn-home .bn-index-note { border-radius: 0; }
+
+/* Series. */
+.bn-home.bn-home .bn-series { padding: 0 14px; border-bottom: 1px solid var(--bn-line); border-radius: 0; }
+.bn-home.bn-home .bn-series:last-child { border-bottom: 0; }
 .bn-series-left { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; }
-.bn-series-name { font-size: 15px; font-weight: 500; }
+.bn-series-name { font: 500 15px var(--bn-f-ui); }
 .bn-series-bars { display: flex; gap: 4px; }
-.bn-series-bar { width: 26px; height: 4px; border-radius: 2px; background: var(--bn-purple); opacity: 0.85; }
-.bn-series-bar.is-today { opacity: 1; box-shadow: 0 0 0 2px var(--bn-purple-bg); }
+.bn-series-bar { width: 26px; height: 4px; border-radius: 2px; background: var(--bn-acc); opacity: 0.85; }
+.bn-series-bar.is-today { opacity: 1; box-shadow: 0 0 0 2px var(--bn-a2); }
 
+/* Status line. */
+.bn-statl {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; box-sizing: border-box;
+  border-radius: 10px; border: 1px solid var(--bn-line); background: var(--bn-panel); font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted);
+}
+.bn-statl .bn-ok { display: inline-flex; align-items: center; gap: 7px; }
+.bn-statl .bn-ok::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--bn-add); }
+
+/* First run. */
 .bn-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 30px 12px 4px; }
-.bn-empty-icon { color: var(--text-faint); }
+.bn-empty-icon { color: var(--bn-faint); }
 .bn-empty-icon svg { width: 40px; height: 40px; stroke-width: 1.4; }
-.bn-empty h2 { margin: 6px 0 0; font-size: 17px; font-weight: 600; }
-.bn-empty p { margin: 0; max-width: 300px; font-size: 14.5px; line-height: 1.5; color: var(--text-muted); }
-.bn-adopt-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; border: 1px solid var(--background-modifier-border); border-radius: var(--bn-radius); }
+.bn-home.bn-home .bn-empty h2 { margin: 6px 0 0; font: 600 17px var(--bn-f-ui); }
+.bn-empty p { margin: 0; max-width: 300px; font-size: 14.5px; line-height: 1.5; color: var(--bn-muted); }
+.bn-adopt-card { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
 .bn-adopt-head { display: flex; gap: 10px; align-items: flex-start; }
-.bn-adopt-head h2 { margin: 0; font-size: 15px; font-weight: 600; }
-.bn-adopt-head p { margin: 4px 0 0; font-size: 13.5px; color: var(--text-muted); }
+.bn-home.bn-home .bn-adopt-head h2 { margin: 0; font: 600 15px var(--bn-f-ui); }
+.bn-adopt-head p { margin: 4px 0 0; font-size: 13.5px; color: var(--bn-muted); }
 .bn-adopt-actions, .bn-modal-actions { display: flex; gap: 8px; align-items: center; }
 .bn-adopt-actions { padding-left: 28px; }
-.bn-adopt-card .bn-btn-quiet, .bn-modal-actions .bn-btn-quiet { min-height: 36px; padding: 0 12px; color: var(--text-muted); }
+.bn-home.bn-home .bn-adopt-card .bn-btn-quiet, .bn-modal-actions .bn-btn-quiet { min-height: 36px; padding: 0 12px; color: var(--bn-muted); }
 
-/* --------------------------------------------------------- Cover band --- */
+/* hover only where there is a pointer: a tap on a phone must not leave a row lit */
+@media (hover: hover) {
+  .bn-home.bn-home .bn-pal:hover, .bn-home.bn-home .bn-lg:hover, .bn-home.bn-home .bn-row:hover,
+  .bn-cover.bn-cover .bn-row:hover, .bn-home.bn-home .bn-answered-row:hover { background: var(--bn-panel-hi); }
+  .bn-home.bn-home .bn-tile:hover { border-color: var(--bn-line-hi); }
+  .bn-home.bn-home .bn-diff:hover { border-color: var(--bn-add); }
+  .bn-home.bn-home .bn-more:hover { color: var(--bn-ink); }
+  .bn-home.bn-home .bn-task-meta:hover, .bn-cover.bn-cover .bn-task-meta:hover { color: var(--bn-ink); text-decoration: underline; text-underline-offset: 2px; }
+}
+
+/* --------------------------------------------------------------- Cover --- */
 /* Obsidian shows its properties panel through its own variables
    (`.is-live-preview.show-properties .metadata-container` reads
    --metadata-display-editing, a 0,5,0 selector no plain rule here beats), so
@@ -189,77 +396,147 @@ body.theme-dark {
 .bn-note:not(.bn-raw) { --metadata-display-editing: none; --metadata-display-reading: none; }
 .bn-note:not(.bn-raw) .inline-title,
 .bn-note:not(.bn-raw) .metadata-container { display: none; }
-.bn-cover.bn-cover { margin: 0 0 18px; color: var(--text-normal); font-size: var(--font-text-size, 16px); line-height: 1.4; }
-.bn-cover-band { height: 104px; border-radius: var(--bn-radius); background: var(--bn-band-sunday); }
-.bn-cover.kind-community .bn-cover-band { background: var(--bn-band-community); }
-.bn-cover.kind-meditation .bn-cover-band { background: var(--bn-band-meditation); }
-.bn-cover.kind-study .bn-cover-band { background: var(--bn-band-study); }
-.bn-cover-inner { display: flex; flex-direction: column; padding: 0 4px; }
-.bn-cover-icon { font-size: 58px; line-height: 1; margin-top: -34px; margin-left: 2px; }
+.bn-cover.bn-cover { margin: 0 0 18px; font-size: 16px; line-height: 1.4; }
+.bn-cover-inner { display: flex; flex-direction: column; min-width: 0; }
+.bn-crumb { margin: 0 0 10px; padding: 0 2px; font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-crumb strong { font-weight: 500; color: var(--bn-ink); }
+.bn-cover.bn-cover .bn-hdr {
+  position: relative; padding: 16px 16px 14px;
+  background: radial-gradient(220px 130px at 0 0, var(--bn-kg), transparent 75%), var(--bn-panel);
+}
+.bn-hdr::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 3px; border-radius: 0 3px 3px 0; background: var(--bn-k); }
+.bn-hdr-top { display: flex; align-items: center; gap: 12px; }
+.bn-hdr-em {
+  flex: none; display: grid; place-items: center; width: 52px; height: 52px; box-sizing: border-box; border-radius: 14px;
+  border: 1px solid var(--bn-line-hi); background: var(--bn-panel-hi); font-size: 28px; line-height: 1; box-shadow: 0 0 22px var(--bn-kg);
+}
+.bn-hdr-k { min-width: 0; font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-hdr-k strong { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; font: 500 13px var(--bn-f-mono); color: var(--bn-ink); }
 .bn-cover.bn-cover .bn-title {
-  display: block; width: 100%; margin: 14px 0 12px; padding: 0; border: 0; background: none; box-shadow: none; resize: none;
-  overflow: hidden; color: var(--inline-title-color, var(--text-normal)); font-family: var(--inline-title-font, inherit);
-  font-size: 2em; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; min-height: 1.15em;
+  display: block; width: 100%; margin: 14px 0 0; padding: 0; border: 0; background: none; box-shadow: none; resize: none;
+  overflow: hidden; color: var(--bn-ink); font-family: var(--bn-f-ui);
+  font-size: 32px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; min-height: 1.1em;
   height: var(--bn-title-h, auto);
 }
 .bn-cover.bn-cover .bn-title:focus { outline: none; box-shadow: none; }
-.bn-cover.bn-cover .bn-title::placeholder { color: var(--text-faint); }
-.bn-props { display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 8px; font-size: 14px; }
-.bn-cover-tools, .bn-cover.bn-cover .bn-carry, .bn-carry-list { font-size: 14px; }
-.bn-prop-label { display: flex; align-items: center; min-height: 34px; color: var(--text-muted); font-size: 14px; }
-.bn-prop-value { display: flex; align-items: center; min-height: 34px; min-width: 0; }
+.bn-cover.bn-cover .bn-title::placeholder { color: var(--bn-faint); }
+
+/* The properties, laid out like frontmatter. */
+.bn-props {
+  margin: 12px 0 0; background: var(--bn-panel); border: 1px solid var(--bn-line); border-radius: 14px; overflow: hidden;
+  box-shadow: inset 0 1px 0 var(--bn-hl), var(--bn-shadow);
+}
+.bn-pr { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 46px; padding: 6px 14px; border-bottom: 1px solid var(--bn-line); }
+.bn-pr:last-child { border-bottom: 0; }
+.bn-prop-label { display: flex; align-items: center; font: 400 13px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-prop-value { display: flex; align-items: center; min-width: 0; min-height: 34px; font-size: 15.5px; }
 .bn-cover.bn-cover .bn-prop-btn {
   display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 34px; padding: 0 6px; margin-left: -6px;
-  border-radius: 4px; font-size: 14px; color: var(--text-normal); max-width: 100%;
+  border-radius: 6px; font-size: 15.5px; color: var(--bn-ink); max-width: 100%; word-break: break-word; overflow-wrap: anywhere;
 }
-.bn-cover.bn-cover .bn-prop-btn:hover { background: var(--background-modifier-hover); }
-.bn-cover.bn-cover .bn-prop-btn.is-empty { color: var(--text-faint); }
+.bn-cover.bn-cover .bn-prop-btn.is-mono { font-family: var(--bn-f-mono); font-size: 14.5px; }
+.bn-cover.bn-cover .bn-prop-btn.is-empty { color: var(--bn-faint); }
 .bn-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 0; }
-.bn-cover.bn-cover .bn-chip { display: inline-flex; padding: 0 7px; border-radius: 4px; background: var(--bn-blue-bg); color: var(--bn-blue); font-size: 13px; height: 24px; align-items: center; }
-.bn-cover.bn-cover .bn-chip:hover { box-shadow: 0 0 0 1px var(--bn-blue); }
-.bn-cover.bn-cover .bn-prop-edit { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: var(--text-faint); }
-.bn-cover.bn-cover .bn-prop-edit:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.bn-cover.bn-cover .bn-chip {
+  display: inline-flex; padding: 0 7px; height: 26px; align-items: center; border-radius: 6px; box-sizing: border-box;
+  border: 1px solid var(--bn-line-hi); border-bottom-width: 2px; background: var(--bn-panel-hi); color: var(--bn-acc-ink);
+  font: 500 13px/1.6 var(--bn-f-mono); white-space: nowrap;
+}
+.bn-cover.bn-cover .bn-prop-edit { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: var(--bn-faint); }
 .bn-cover.bn-cover .bn-prop-edit svg { width: 14px; height: 14px; }
 /* Scoped above Obsidian's own input[type=…] and :hover rules, with the box
    set explicitly so the host's field styling can't repaint it. */
 .bn-cover.bn-cover input.bn-prop-input, .bn-cover.bn-cover input.bn-prop-input:hover, .bn-cover.bn-cover input.bn-prop-input:focus {
-  width: 100%; max-width: 360px; height: 32px; padding: 0 8px; font-size: 14px; color: var(--text-normal);
-  background: var(--background-primary); border: 1px solid var(--background-modifier-border-focus, var(--interactive-accent));
-  border-radius: 4px; box-shadow: none;
+  width: 100%; max-width: 360px; height: 32px; padding: 0 8px; font: 400 14px var(--bn-f-ui); color: var(--bn-ink);
+  background: var(--bn-panel-hi); border: 1px solid var(--bn-acc-ink); border-radius: 6px; box-shadow: none;
 }
-.bn-cover-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 6px; }
-.bn-cover.bn-cover .bn-link { font-size: 12.5px; color: var(--text-muted); min-height: 28px; }
-.bn-cover.bn-cover .bn-link:hover { color: var(--text-normal); }
+.bn-cover-tools { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; padding: 0 2px; font-size: 14px; }
+.bn-cover.bn-cover .bn-link { font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted); min-height: 28px; }
+.bn-cover.bn-cover .bn-cover-tools .bn-btn-quiet { font: 400 12.5px var(--bn-f-mono); color: var(--bn-muted); min-height: 28px; }
+/* Still open from earlier: a panel row with an accent rule, then its list. */
 .bn-cover.bn-cover .bn-carry {
-  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 18px; min-height: 44px; padding: 0 12px;
-  border-radius: 6px; background: var(--background-secondary); font-size: 14px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 14px; min-height: 44px; padding: 0 12px; box-sizing: border-box;
+  border: 1px solid var(--bn-line); border-radius: 12px; background: var(--bn-panel); font: 400 14px var(--bn-f-ui);
+  box-shadow: inset 2px 0 0 var(--bn-acc), inset 0 1px 0 var(--bn-hl);
 }
-.bn-cover.bn-cover .bn-carry:hover { background: var(--background-modifier-hover); }
-.bn-carry-from { max-width: 45%; }
-.bn-carry-list { display: flex; flex-direction: column; padding: 4px 12px 0; }
-.bn-carry-more { margin: 4px 0 0; }
+.bn-carry-from { max-width: 45%; font: 400 12.5px var(--bn-f-mono); }
+.bn-carry-list {
+  display: flex; flex-direction: column; margin-top: 8px; overflow: hidden; font-size: 14px;
+  border: 1px solid var(--bn-line); border-radius: 12px; background: var(--bn-panel);
+}
+.bn-carry-more { margin: 0; padding: 8px 14px 10px; }
+@media (hover: hover) {
+  .bn-cover.bn-cover .bn-prop-btn:hover, .bn-cover.bn-cover .bn-prop-edit:hover, .bn-cover.bn-cover .bn-carry:hover { background: var(--bn-panel-hi); }
+  .bn-cover.bn-cover .bn-link:hover, .bn-cover.bn-cover .bn-prop-edit:hover { color: var(--bn-ink); }
+  .bn-cover.bn-cover .bn-chip:hover { background: var(--bn-a2); }
+}
 
-/* --------------------------------------------------- Chips in the text --- */
-.bn-ref, .markdown-rendered a.bn-ref {
-  color: var(--bn-blue); background: var(--bn-blue-bg); border-radius: 4px; padding: 0 3px;
-  text-decoration: none; cursor: pointer; -webkit-box-decoration-break: clone; box-decoration-break: clone;
+/* ------------------------------------------------------------ Note body --- */
+/* Plain scoped CSS on the leaf of a Bible Notes note (Covers sets .bn-note).
+   Obsidian's own variables are pointed at the palette rather than each rule
+   fought: ground and text colours, the list bullet, the checkbox and the
+   highlight. No blur, no fill behind the text. No line numbers and no status
+   bar: those are Obsidian's own settings. */
+.bn-note {
+  --background-primary: var(--bn-bg); --background-primary-alt: var(--bn-bg);
+  --text-normal: var(--bn-ink); --text-muted: var(--bn-muted); --text-faint: var(--bn-faint);
+  --font-text: var(--bn-f-ui);
+  --h1-size: 1.55em; --h2-size: 1.18em; --h3-size: 1.06em; --h4-size: 1em; --h5-size: 1em; --h6-size: 1em;
+  --h1-weight: 600; --h2-weight: 600; --h3-weight: 600; --h4-weight: 600; --h5-weight: 600; --h6-weight: 600;
+  --h1-line-height: 1.2; --h2-line-height: 1.25; --h3-line-height: 1.3;
+  --h1-color: var(--bn-ink); --h2-color: var(--bn-ink); --h3-color: var(--bn-ink); --h4-color: var(--bn-ink); --h5-color: var(--bn-ink); --h6-color: var(--bn-ink);
+  --bold-color: var(--bn-ink);
+  --list-bullet-radius: 2px; --list-bullet-size: 0.38em; --list-marker-color: var(--bn-acc); --list-marker-color-hover: var(--bn-acc-ink); --list-marker-color-collapsed: var(--bn-acc-ink);
+  --checkbox-radius: 6px; --checkbox-color: var(--bn-add); --checkbox-color-hover: var(--bn-add); --checkbox-marker-color: var(--bn-add-on);
+  --checkbox-border-color: var(--bn-line-hi); --checkbox-border-color-hover: var(--bn-muted);
+  --checklist-done-color: var(--bn-muted); --checklist-done-decoration: line-through;
+  --text-highlight-bg: var(--bn-a2);
+  font-variant-numeric: tabular-nums;
 }
-.bn-ref:hover, .markdown-rendered a.bn-ref:hover { box-shadow: 0 0 0 1px var(--bn-blue); text-decoration: none; }
+.workspace-leaf-content.bn-note[data-type="markdown"] > .view-content {
+  background-color: var(--bn-bg);
+  background-image:
+    radial-gradient(70% 28% at 10% 0%, var(--bn-glow1) 0, transparent 72%),
+    radial-gradient(60% 26% at 105% 48%, var(--bn-glow2) 0, transparent 72%),
+    linear-gradient(var(--bn-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bn-grid) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  background-position: 0 0, 0 0, 0 0, 0 0;
+}
+/* Headings: Geist 600, a hairline under the sections (## Message). Live
+   Preview and Reading view. */
+.bn-note .markdown-preview-view :is(h1, h2, h3, h4, h5, h6), .bn-note .markdown-source-view .cm-header { letter-spacing: -0.015em; }
+.bn-note .markdown-preview-view h2, .bn-note .markdown-source-view.mod-cm6 .cm-line.HyperMD-header-2 {
+  padding-bottom: 0.25em; border-bottom: 1px solid var(--bn-line);
+}
+.bn-note .markdown-source-view .cm-formatting-header { font-family: var(--bn-f-mono); font-weight: 400; color: var(--bn-faint); }
+.bn-note .markdown-preview-view mark, .bn-note .markdown-source-view .cm-highlight { border-radius: 3px; }
 
 /* -------------------------------------------------------------- Popover --- */
+/* A denser fill than the Home panels: it floats over text. */
 .bn-popover.bn-popover {
   position: fixed; z-index: var(--layer-popover, 30); box-sizing: border-box; padding: 6px;
   width: var(--bn-pop-w, 264px); left: var(--bn-pop-x, 8px); top: var(--bn-pop-y, 8px);
-  background: var(--background-primary); color: var(--text-normal); border: 1px solid var(--background-modifier-border);
-  border-radius: var(--bn-radius); box-shadow: var(--shadow-l, 0 9px 24px rgba(15, 15, 15, 0.2)); font-size: 14px; line-height: 1.4;
+  background: var(--bn-sheet); border: 1px solid var(--bn-line-hi); border-radius: 14px;
+  box-shadow: inset 0 1px 0 var(--bn-hl), var(--bn-shadow); font-size: 14px; line-height: 1.4;
 }
 .bn-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 10px 8px; }
-.bn-pop-head strong { font-weight: 600; }
-.bn-popover.bn-popover .bn-pop-row { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; padding: 0 10px; border-radius: 4px; }
-.bn-popover.bn-popover .bn-pop-row:hover { background: var(--background-modifier-hover); }
-.bn-pop-rule { height: 1px; margin: 4px; background: var(--background-modifier-border); }
-.bn-pop-label { padding: 6px 10px 2px; font-size: 12px; font-weight: 600; color: var(--text-muted); }
-.bn-pop-empty { margin: 4px 10px 8px; font-size: 13px; color: var(--text-muted); }
+.bn-pop-head strong { font: 500 14px var(--bn-f-mono); }
+.bn-popover.bn-popover .bn-pop-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 8px; border-radius: 8px; font: 400 14.5px var(--bn-f-ui);
+}
+.bn-popover.bn-popover .bn-pop-row.is-primary { background: var(--bn-a1); }
+.bn-popover.bn-popover .bn-pop-row.is-primary .bn-icon { color: var(--bn-acc-ink); }
+.bn-popover.bn-popover .bn-pop-row .bn-dot { width: 7px; height: 7px; }
+.bn-popover.bn-popover .bn-pop-kbd { display: none; }
+.bn-pop-rule { height: 1px; margin: 4px; background: var(--bn-line); }
+.bn-pop-label { padding: 6px 10px 2px; font: 400 12px var(--bn-f-mono); color: var(--bn-muted); }
+.bn-pop-empty { margin: 4px 10px 8px; font-size: 13px; color: var(--bn-muted); }
+@media (hover: hover) {
+  .bn-popover.bn-popover .bn-pop-kbd { display: inline-flex; }
+  .bn-popover.bn-popover .bn-pop-row:hover { background: var(--bn-panel-hi); }
+  .bn-popover.bn-popover .bn-pop-row.is-primary:hover { background: var(--bn-a2); }
+}
 
 /* --------------------------------------------------------- Adopt modal --- */
 .bn-adopt-modal .bn-modal-title { margin-top: 0; }
@@ -274,20 +551,21 @@ body.theme-dark {
 /* ---------------------------------------------------------------- Phone --- */
 /* Obsidian marks its phone and tablet apps with .is-mobile: every tap target
    44px, and inputs at 16px so iOS doesn't zoom the page when one takes focus. */
-.is-mobile .bn-prop-label, .is-mobile .bn-prop-value, .is-mobile .bn-cover.bn-cover .bn-prop-btn,
-.is-mobile .bn-cover.bn-cover .bn-link, .is-mobile .bn-popover.bn-popover .bn-pop-row, .is-mobile .bn-home.bn-home .bn-index-ch { min-height: 44px; }
+.is-mobile .bn-cover.bn-cover .bn-prop-btn, .is-mobile .bn-cover.bn-cover .bn-link,
+.is-mobile .bn-popover.bn-popover .bn-pop-row { min-height: 44px; }
+.is-mobile .bn-prop-value { min-height: 44px; }
+.is-mobile .bn-pr { padding-top: 0; padding-bottom: 0; }
 .is-mobile .bn-cover.bn-cover .bn-prop-edit { width: 44px; height: 44px; }
 .is-mobile .bn-cover.bn-cover .bn-chip { height: 32px; padding: 0 10px; }
-.is-mobile .bn-home.bn-home .bn-index-ch { min-width: 44px; }
+/* The "Remain in me · 18 Oct" link under a task sits inside the task's
+   label: a near miss would tick the task. Pad its hit area to 44px without
+   moving the line (the negative margin takes the padding back). */
+.is-mobile .bn-home.bn-home .bn-task-meta, .is-mobile .bn-cover.bn-cover .bn-task-meta { padding: 14px 0; margin: -14px 0; }
+.is-mobile .bn-home.bn-home .bn-adopt-card .bn-btn-quiet, .is-mobile .bn-cover.bn-cover .bn-cover-tools .bn-btn-quiet { min-height: 44px; }
 .is-mobile .bn-cover.bn-cover input.bn-prop-input { height: 40px; font-size: 16px; }
-.is-mobile .bn-cover.bn-cover .bn-title { font-size: 1.75em; }
 
 @media (max-width: 480px) {
-  .bn-home.bn-home { padding: 28px 16px 64px; }
-  .bn-props { grid-template-columns: 96px minmax(0, 1fr); }
-  .bn-cover-band { height: 88px; }
-  .bn-cover-icon { font-size: 52px; margin-top: -30px; }
-  .bn-index-row { grid-template-columns: 96px minmax(0, 1fr); }
-  .bn-index-notes { margin-left: 0; }
+  .bn-home.bn-home { padding: 16px 16px 48px; }
+  .bn-pr { grid-template-columns: 80px minmax(0, 1fr); }
   .bn-carry-from { display: none; }
 }

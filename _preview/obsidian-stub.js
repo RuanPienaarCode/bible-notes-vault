@@ -4,6 +4,7 @@ const PATHS = {
   'book-open': 'M2 5.5C4.5 4 8 4 12 6c4-2 7.5-2 10-.5V20c-2.5-1.5-6-1.5-10 .5-4-2-7.5-2-10-.5ZM12 6v14.5',
   'arrow-right': 'M5 12h14M13 6l6 6-6 6',
   'external-link': 'M15 3h6v6M10 14L21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
+  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM21 21l-4.3-4.3',
   'chevron-right': 'M9 18l6-6-6-6',
   'chevron-down': 'M6 9l6 6 6-6',
   plus: 'M12 5v14M5 12h14',

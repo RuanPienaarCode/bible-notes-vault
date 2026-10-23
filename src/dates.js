@@ -46,5 +46,7 @@ function shortDate(iso, today) {
   return `${p.d} ${MONTHS[p.m].slice(0, 3)}`;
 }
 const weekday = iso => parts(iso).w;
+/* "Sun 25 Oct 2026" — the mono date line under the greeting. */
+function stampDate(iso) { const p = parts(iso); return `${DAYS[p.w].slice(0, 3)} ${p.d} ${MONTHS[p.m].slice(0, 3)} ${p.y}`; }
 
-module.exports = { isRealISO, todayISO, diffDays, addDays, longDate, dayHeading, shortDate, weekday, MONTHS, DAYS };
+module.exports = { isRealISO, todayISO, diffDays, addDays, longDate, dayHeading, shortDate, weekday, stampDate, MONTHS, DAYS };

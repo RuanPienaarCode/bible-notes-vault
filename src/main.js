@@ -9,7 +9,7 @@
    ============================================================================ */
 
 const { Plugin, MarkdownView } = require('obsidian');
-const { VIEW_TYPE, DEFAULT_SETTINGS, KINDS } = require('./constants');
+const { VIEW_TYPE, DEFAULT_SETTINGS, KINDS, ACCENTS } = require('./constants');
 const { makeStore } = require('./store');
 const { HomeView } = require('./view');
 const { Covers } = require('./cover');
@@ -92,6 +92,16 @@ class BibleNotesPlugin extends Plugin {
     return view && view.file ? this.store.notes.get(view.file.path) || null : null;
   }
 
+  /* The accent changed in Settings: retag every note leaf and redraw each
+     cover and Home that is open. (A passage card already on screen keeps the
+     accent it opened with; the next one picks up the new one.) */
+  applyAccent() {
+    this.covers.refreshAll();
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
+      if (leaf.view && leaf.view.home) leaf.view.home.render();
+    }
+  }
+
   async openAdopt() {
     const items = await this.store.adoptScan();
     new AdoptModal(this.app, this, items).open();
@@ -110,6 +120,7 @@ class BibleNotesPlugin extends Plugin {
     const saved = (await this.loadData()) || {};
     this.settings = Object.assign({}, DEFAULT_SETTINGS, saved);
     this.settings.folders = Object.assign({}, DEFAULT_SETTINGS.folders, saved.folders || {});
+    if (!ACCENTS.some(([id]) => id === this.settings.accent)) this.settings.accent = DEFAULT_SETTINGS.accent;
   }
 
   async saveSettings() {

@@ -1,7 +1,8 @@
 'use strict';
-/* The cover band on a Bible Notes note: a flat band, the kind's icon, a big
-   title that renames the file, the properties as quiet rows you tap to edit,
-   and "still open from earlier". It replaces Obsidian's inline title and
+/* The cover on a Bible Notes note: a breadcrumb, a glass header panel (the
+   kind's icon, its label, a big title that renames the file) and the
+   properties laid out like frontmatter — mono keys, values you tap to edit —
+   then "still open from earlier". It replaces Obsidian's inline title and
    properties panel on these notes only; "Show raw properties" brings the
    native panel back.
 
@@ -11,7 +12,7 @@
 
 const { Platform } = require('obsidian');
 const { el, icon, button, clear, checkRow } = require('./dom');
-const { kindOf } = require('./constants');
+const { kindOf, accentClass, ACCENT_GREEN } = require('./constants');
 const { carriedInto, partOf } = require('./index');
 const { showPassagePopover } = require('./popover');
 const D = require('./dates');
@@ -22,7 +23,10 @@ const FIELDS = {
   meditation: ['date', 'scripture'],
   study: ['started', 'scripture'],
 };
+/* LABELS name a field for a screen reader and its input; KEYS are what the
+   row shows, set in mono like a frontmatter key. */
 const LABELS = { date: 'Date', started: 'Started', speaker: 'Speaker', series: 'Series', scripture: 'Passage', church: 'Church', people: 'Who was there' };
+const KEYS = { date: 'date', started: 'started', speaker: 'speaker', series: 'series', scripture: 'passage', church: 'church', people: 'people' };
 const PLACEHOLDER = { date: 'Add a date', started: 'Add a date', speaker: 'Add speaker', series: 'Add series', scripture: 'Add passage', church: 'Add church', people: 'Add people' };
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
@@ -53,7 +57,7 @@ class Covers {
     for (const leaf of this.plugin.app.workspace.getLeavesOfType('markdown')) {
       const c = leaf.view && leaf.view.containerEl;
       if (!c) continue;
-      c.classList.remove('bn-note', 'bn-raw');
+      c.classList.remove('bn-note', 'bn-raw', ACCENT_GREEN);
       c.querySelectorAll('.bn-cover').forEach(removeCover);
     }
   }
@@ -62,6 +66,9 @@ class Covers {
     if (!view || !view.containerEl) return;
     const c = view.containerEl;
     const note = view.file ? this.store.notes.get(view.file.path) : null;
+    /* On every markdown leaf, not only Bible Notes notes: with "passage chips
+       in every note" on, a chip in any note takes the accent. */
+    c.classList.toggle(ACCENT_GREEN, !!accentClass(this.plugin.settings));
     if (!note) {
       c.classList.remove('bn-note', 'bn-raw');
       c.querySelectorAll('.bn-cover').forEach(removeCover);
@@ -93,7 +100,7 @@ class Covers {
     cover._bnView = view;
     /* Never redraw under someone typing in the band. */
     if (cover.contains(document.activeElement) && cover.dataset.path === note.path) { cover._bnStale = true; return; }
-    const sig = signature(note, this.store.index, this.raw.has(note.path), this.expanded.has(note.path));
+    const sig = signature(note, this.store.index, this.raw.has(note.path), this.expanded.has(note.path), accentClass(this.plugin.settings));
     if (cover.dataset.sig === sig && cover.dataset.path === note.path) return;
     cover.dataset.sig = sig;
     cover.dataset.path = note.path;
@@ -107,13 +114,25 @@ class Covers {
     const k = kindOf(note.kind);
     if (cover._bnRO) { cover._bnRO.disconnect(); cover._bnRO = null; }
     clear(cover);
-    cover.className = `bn-cover kind-${note.kind}`;
-    el(cover, 'div', 'bn-cover-band').setAttribute('aria-hidden', 'true');
+    cover.className = `bn-cover kind-${note.kind} bn-k-${note.kind} ${accentClass(this.plugin.settings)}`.trim();
     const inner = el(cover, 'div', 'bn-cover-inner');
-    el(inner, 'div', 'bn-cover-icon', k.emoji).setAttribute('aria-hidden', 'true');
+    /* Where this note sits: kind, then its file name. */
+    const crumb = el(inner, 'div', 'bn-crumb bn-ellipsis');
+    crumb.appendChild(document.createTextNode(`${k.label} / `));
+    el(crumb, 'strong', null, note.basename);
+
+    const hdr = el(inner, 'div', 'bn-glass bn-hdr');
+    const top = el(hdr, 'div', 'bn-hdr-top');
+    el(top, 'span', 'bn-hdr-em', k.emoji).setAttribute('aria-hidden', 'true');
+    const kind = el(top, 'span', 'bn-hdr-k');
+    const kname = el(kind, 'strong');
+    el(kname, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
+    kname.appendChild(document.createTextNode(k.button));
+    const sub = kindSub(note, index);
+    if (sub) kind.appendChild(document.createTextNode(sub));
 
     /* The title IS the file name (minus its date). */
-    const title = el(inner, 'textarea', 'bn-title');
+    const title = el(hdr, 'textarea', 'bn-title');
     title.rows = 1;
     title.value = note.title;
     title.placeholder = k.label;
@@ -140,6 +159,8 @@ class Covers {
       });
       cover._bnRO.observe(title);
     }
+    /* The bundled font swaps in after first paint and can re-wrap the title. */
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(grow);
     title.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); title.blur(); focusBody(view); }
       if (e.key === 'Escape') { title.value = note.title; title.blur(); }
@@ -176,6 +197,8 @@ class Covers {
     }
 
     const props = el(inner, 'div', 'bn-props');
+    props.setAttribute('role', 'group');
+    props.setAttribute('aria-label', 'Properties');
     for (const key of FIELDS[note.kind]) this.prop(props, note, key, view);
 
     const tools = el(inner, 'div', 'bn-cover-tools');
@@ -210,9 +233,9 @@ class Covers {
           box.setAttribute('aria-label', item.task.text);
           const t = el(row, 'span', 'bn-task-text');
           el(t, 'span', 'bn-task-title', item.task.text);
-          const m = el(t, 'button', 'bn-task-meta');
+          const m = el(t, 'button', `bn-task-meta bn-k-${item.note.kind}`);
           m.type = 'button';
-          el(m, 'span', 'bn-meta-emoji', kindOf(item.note.kind).emoji).setAttribute('aria-hidden', 'true');
+          el(m, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
           m.appendChild(document.createTextNode(item.note.title));
           m.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); store.openPath(item.note.path); });
         }
@@ -225,8 +248,9 @@ class Covers {
      input in place. */
   prop(parent, note, key, view) {
     const store = this.store;
-    el(parent, 'span', 'bn-prop-label', LABELS[key]);
-    const cell = el(parent, 'div', 'bn-prop-value');
+    const row = el(parent, 'div', 'bn-pr');
+    el(row, 'span', 'bn-prop-label', KEYS[key]);
+    const cell = el(row, 'div', 'bn-prop-value');
     const value = key === 'date' || key === 'started' ? (note.fm[key] ? String(note.fm[key]) : '') : list(note.fm[key]).join(key === 'scripture' ? '; ' : ', ');
 
     const show = () => {
@@ -236,7 +260,7 @@ class Covers {
         for (const e of note.scripture) {
           if (e.refs.length) {
             for (const r of e.refs) {
-              const chip = el(wrap, 'button', 'bn-pill tone-blue bn-chip', r.label);
+              const chip = el(wrap, 'button', 'bn-keycap bn-chip', r.label);
               chip.type = 'button';
               chip.setAttribute('aria-haspopup', 'dialog');
               chip.addEventListener('click', ev => { ev.stopPropagation(); showPassagePopover(this.plugin, r, chip, note.path); });
@@ -252,13 +276,17 @@ class Covers {
       const b = el(cell, 'button', 'bn-prop-btn' + (value ? '' : ' is-empty'));
       b.type = 'button';
       if (key === 'series' && value) {
-        el(b, 'span', 'bn-pill tone-purple', value);
+        const tok = el(b, 'span', 'bn-tok bn-k-study');
+        el(tok, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
+        tok.appendChild(document.createTextNode(value));
         const part = partOf(store.index, note);
-        if (part) el(b, 'span', 'bn-dim', `part ${part}`);
+        if (part) el(tok, 'em', null, `#${part}`);
       } else if ((key === 'date' || key === 'started') && D.isRealISO(value)) {
-        b.textContent = `${D.DAYS[D.weekday(value)]} ${D.longDate(value)}`;
+        b.classList.add('is-mono');
+        b.appendChild(document.createTextNode(`${value} `));
+        el(b, 'span', 'bn-dim', D.DAYS[D.weekday(value)].slice(0, 3));
       } else if (key === 'people' && note.people.length) {
-        for (const p of note.people) el(b, 'span', 'bn-pill' + (p.linked ? ' tone-blue' : ''), p.name);
+        for (const p of note.people) el(b, 'span', 'bn-tok' + (p.linked ? ' is-linked' : ''), p.name);
       } else {
         b.textContent = value || PLACEHOLDER[key];
       }
@@ -317,6 +345,13 @@ class Covers {
   }
 }
 
+/* The line under the kind in the header: a Sunday note's series and part. */
+function kindSub(note, index) {
+  if (note.kind !== 'sunday' || !note.series) return '';
+  const part = partOf(index, note);
+  return part ? `${note.series} · part ${part}` : note.series;
+}
+
 /* What a typed value is written as. Empty removes the property. */
 function toValue(store, key, text) {
   if (!text) return undefined;
@@ -343,9 +378,9 @@ function suggestions(index, key) {
 
 /* Everything the band shows, as one string — when it is unchanged the band
    is left alone (no flicker, no lost focus). */
-function signature(note, index, raw, expanded) {
+function signature(note, index, raw, expanded, accent) {
   const carried = carriedInto(index, note).map(c => c.task.raw + c.note.path).join('|');
-  return JSON.stringify([note.path, note.title, note.kind, FIELDS[note.kind].map(k => note.fm[k]), partOf(index, note), carried, raw, expanded]);
+  return JSON.stringify([note.path, note.title, note.kind, FIELDS[note.kind].map(k => note.fm[k]), partOf(index, note), carried, raw, expanded, accent]);
 }
 
 /* The band sits above the editor's text; when its height changes the

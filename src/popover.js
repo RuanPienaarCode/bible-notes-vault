@@ -4,7 +4,7 @@
    on Escape, an outside tap, or the page moving under it. */
 
 const { el, icon } = require('./dom');
-const { kindOf } = require('./constants');
+const { kindOf, accentClass } = require('./constants');
 const { chapterKeys, passageNoteName, linkTranslation } = require('./scripture');
 const { notesOn } = require('./index');
 const D = require('./dates');
@@ -24,7 +24,7 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   closePopover();
   const store = plugin.store;
   const today = D.todayISO();
-  const pop = el(document.body, 'div', 'bn-popover');
+  const pop = el(document.body, 'div', `bn-popover bn-glass ${accentClass(plugin.settings)}`.trim());
   pop.setAttribute('role', 'dialog');
   pop.setAttribute('aria-label', ref.label);
 
@@ -39,11 +39,12 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   const inVault = !reader && store.chapterNote(ref);
   const badge = reader || inVault ? (ref.translation || '').toUpperCase() : linkTranslation(ref, plugin.settings.translation);
   if (badge) el(head, 'span', 'bn-pill', badge);
-  const go = el(pop, 'button', 'bn-pop-row');
+  const go = el(pop, 'button', 'bn-pop-row is-primary');
   go.type = 'button';
   icon(go, 'book-open');
   el(go, 'span', 'bn-grow', reader ? `Open in ${reader}` : (inVault ? `Open ${passageNoteName(ref)}` : 'Open in BibleHub'));
   if (!reader && !inVault) icon(go, 'external-link', 'bn-dim');
+  el(go, 'span', 'bn-kbd bn-pop-kbd', '↵').setAttribute('aria-hidden', 'true');
   go.addEventListener('click', () => { closePopover(); store.openPassage(ref, sourcePath); });
 
   el(pop, 'div', 'bn-pop-rule');
@@ -59,6 +60,8 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
     for (const n of others.slice(0, 5)) {
       const r = el(pop, 'button', 'bn-pop-row');
       r.type = 'button';
+      r.classList.add(`bn-k-${n.kind}`);
+      el(r, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
       el(r, 'span', 'bn-row-emoji', kindOf(n.kind).emoji).setAttribute('aria-hidden', 'true');
       el(r, 'span', 'bn-grow bn-ellipsis', n.title);
       el(r, 'span', 'bn-dim', n.date ? D.shortDate(n.date, today) : '');

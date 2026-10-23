@@ -1,16 +1,16 @@
 # Bible Notes
 
 Sunday, community, morning meditation and Bible study notes you come back to and build on.
-Every note is a plain markdown file in your vault. The plugin gives it a clean, Notion-style
-page and ties your notes together: by scripture, by what is still open, and by what you are
+Every note is a plain markdown file in your vault. The plugin gives it a dark-first glass
+page (Dev Glass: near-black or cool zinc, one accent, Geist type) and ties your notes together: by scripture, by what is still open, and by what you are
 praying for.
 
 ## What it does
 
 | | |
 | --- | --- |
-| **Home** | Start a note in one tap: Sunday is the lead card on Sundays, Meditation on other mornings. Below that: what is still open, what you are praying for, recent notes, your series, and an index of every passage you have written about. |
-| **Cover band** | Each note opens with a flat band, its icon and a big title. The title *is* the file name, so editing it renames the file and links follow. The properties sit below as quiet rows you tap to edit. |
+| **Home** | A search field that opens Obsidian's quick switcher, your Sunday streak (13 weeks), then Start as a short list: Sunday leads on Sundays, Meditation on other mornings. Below that: what is still open, what you are praying for, recent notes, your series, an index of every passage you have written about, and a status line. |
+| **Cover** | Each note opens with a breadcrumb and a header panel with its icon and a big title. The title *is* the file name, so editing it renames the file and links follow. The properties sit below, laid out like frontmatter, as rows you tap to edit. |
 | **Scripture as the thread** | Write `John 15:5` anywhere and it becomes a passage chip. Tap it to open the passage and see every other note on that chapter. |
 | **Still open** | Any checkbox `- [ ]` in a Bible Notes note is an open item. A new note shows what is still open from earlier, and so does Home. |
 | **Praying for** | Checkboxes under a heading that mentions prayer (*Prayer*, *Praying for*) are prayer requests. Tick one from Bible Notes and it is remembered as answered, with how long ago you first wrote it down. |
@@ -84,7 +84,14 @@ It never rewrites what you wrote.
 
 The folder for each kind's new notes, the template folder, the BibleHub translation, whether
 passage chips appear in every note or only in Bible Notes notes, and the church a Sunday
-note uses when the last one has none.
+note uses when the last one has none. Under Appearance, the accent colour: indigo (the default) or green.
+
+## Fonts
+
+Geist and Geist Mono are bundled inside `styles.css` (no network request). Copyright (c) 2023
+Vercel, in collaboration with basement.studio, under the SIL Open Font License 1.1; the licence
+text is in [`fonts/OFL.txt`](fonts/OFL.txt). The files come unmodified from the `geist` npm
+package, pinned in `package.json`.
 
 ## Privacy
 
@@ -102,7 +109,9 @@ npm run preview       # build the browser harness, then serve the repo and open 
 BIBLE_NOTES_VAULT_PATH=~/path/to/vault ./scripts/deploy.sh   # copy main.js, styles.css and manifest.json into a vault and prove they landed
 ```
 
-`main.js` and `styles.css` at the repo root are build output; edit `src/`. The mobile floor
+`main.js` and `styles.css` at the repo root are build output; edit `src/` (`styles.css` is
+`src/styles.css` with the two fonts inlined by `scripts/styles.mjs`). `.npmrc` sets
+`legacy-peer-deps` because `geist` lists `next` as a peer dependency it does not use. The mobile floor
 is iOS 15 WebKit (no lookbehind regex, no Node APIs, no `innerHTML`); `tests/ios-hazards.test.cjs`
 guards it. The preview harness loads Obsidian's own `app.css`, which you extract locally
 (it is gitignored and not distributed here).
