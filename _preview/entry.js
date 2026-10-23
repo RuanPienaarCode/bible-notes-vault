@@ -6,7 +6,11 @@
      ?empty=1         a vault with no Bible Notes yet (first run + adopt card)
      ?accent=green    the green accent (default indigo)
      ?now=2026-10-25T08:30   the clock Home reads (default: that Sunday morning)
-     ?open=<path>     open a note in the right-hand pane */
+     ?open=<path>     open a note in the right-hand pane
+     ?phone=1         the phone's classes (is-mobile is-phone is-floating-nav)
+                      and a stand-in for Obsidian's floating navigation bar
+     ?w=375           the width of the Home pane in px (default 390)
+     ?hide=open,pray  Home tiles hidden in the settings */
 import { makeMemoryVault } from './memory-vault.js';
 const { makeStore } = require('../src/store');
 const { mountHome } = require('../src/home');
@@ -14,11 +18,23 @@ const { Covers } = require('../src/cover');
 const { makePostProcessor } = require('../src/chips');
 const { DEFAULT_SETTINGS } = require('../src/constants');
 const { AdoptModal } = require('../src/adopt-modal');
+const { PrayerModal } = require('../src/prayer-modal');
 const { parseFrontmatter } = require('../src/frontmatter');
 
 const q = new URLSearchParams(location.search);
 document.body.classList.add(q.get('theme') === 'dark' ? 'theme-dark' : 'theme-light');
+if (q.get('phone')) document.body.classList.add('is-mobile', 'is-phone', 'is-floating-nav');
+if (q.get('w')) document.documentElement.style.setProperty('--home-w', Number(q.get('w')) + 'px');
 const NOW = q.get('now') ? new Date(q.get('now')) : new Date(2026, 9, 25, 8, 30);
+/* The store dates new notes and prayers with `new Date()`: hold the clock at
+   NOW so what Home shows and what it writes agree. */
+{
+  const RealDate = Date;
+  globalThis.Date = class extends RealDate {
+    constructor(...a) { if (a.length) super(...a); else super(NOW.getTime()); }
+    static now() { return NOW.getTime(); }
+  };
+}
 
 const S = 'Bible Notes/Sunday/', C = 'Bible Notes/Community/', M = 'Bible Notes/Meditation/', T = 'Bible Notes/Study/';
 const lines = (...a) => a.join('\n') + '\n';
@@ -48,9 +64,10 @@ const vault = makeMemoryVault(q.get('empty') ? OTHER : { ...NOTES, ...OTHER });
 
 let noteView = null;
 const plugin = {
-  settings: { ...DEFAULT_SETTINGS, folders: { ...DEFAULT_SETTINGS.folders }, church: 'Grace Church', accent: q.get('accent') === 'green' ? 'green' : 'indigo' },
+  settings: { ...DEFAULT_SETTINGS, folders: { ...DEFAULT_SETTINGS.folders }, church: 'Grace Church', hiddenTiles: (q.get('hide') || '').split(',').filter(Boolean), accent: q.get('accent') === 'green' ? 'green' : 'indigo' },
   focusTitleFor: null,
   async saveSettings() {},
+  openPrayer() { new PrayerModal(plugin.app, plugin).open(); },
   async openAdopt() { new AdoptModal(plugin.app, plugin, await plugin.store.adoptScan()).open(); },
 };
 plugin.app = {

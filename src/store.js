@@ -15,6 +15,7 @@
 
 const { Notice, normalizePath } = require('obsidian');
 const { readNote } = require('./note');
+const { appendPrayer, readPrayerList } = require('./prayer');
 const { buildIndex } = require('./index');
 const { toggleTask, adopt, sessionBlock, appendSession } = require('./writes');
 const { planNote, renameTarget } = require('./newnote');
@@ -22,7 +23,7 @@ const { candidates } = require('./adopt');
 const { parseFrontmatter, patchFrontmatter } = require('./frontmatter');
 const { DEFAULT_TEMPLATES, TEMPLATE_NAMES } = require('./templates');
 const { passageNoteName, passageLink, bibleHubUrl, readerRef } = require('./scripture');
-const { KIND_KEY, KIND_IDS } = require('./constants');
+const { KIND_KEY, KIND_IDS, DEFAULT_SETTINGS } = require('./constants');
 const D = require('./dates');
 
 function makeStore(plugin) {
@@ -30,6 +31,9 @@ function makeStore(plugin) {
   const v = app.vault;
   const settings = () => plugin.settings;
   const notes = new Map();
+  /* The prayer list note(s): read for Praying for, but not notes — no cover,
+     not in `notes`, so nothing that counts notes written ever sees one. */
+  const lists = new Map();
   const listeners = new Set();
   let index = buildIndex([], D.todayISO());
   let timer = null;
@@ -39,7 +43,7 @@ function makeStore(plugin) {
 
   function rebuild() {
     timer = null;
-    index = buildIndex([...notes.values()], D.todayISO());
+    index = buildIndex([...notes.values(), ...lists.values()], D.todayISO());
     for (const fn of listeners) { try { fn(index); } catch (e) { console.error('bible-notes listener', e); } }
   }
   function schedule() {
@@ -58,18 +62,29 @@ function makeStore(plugin) {
     return !!(c.frontmatter && Object.prototype.hasOwnProperty.call(c.frontmatter, KIND_KEY));
   }
 
+  /* Drop a path from both maps; was it in either? */
+  function forget(path) {
+    const a = notes.delete(path);
+    const b = lists.delete(path);
+    return a || b;
+  }
+
   async function readFile(f) {
     if (!isMd(f)) return false;
-    if (cacheSays(f) === false) return notes.delete(f.path);
+    if (cacheSays(f) === false) return forget(f.path);
     let text;
     try { text = await v.cachedRead(f); } catch (e) { console.error('bible-notes read', f.path, e); return false; }
-    const n = readNote({ path: f.path, basename: f.basename, text, mtime: f.stat ? f.stat.mtime : 0 }, settings());
-    if (n) { notes.set(f.path, n); return true; }
-    return notes.delete(f.path);
+    const file = { path: f.path, basename: f.basename, text, mtime: f.stat ? f.stat.mtime : 0 };
+    const n = readNote(file, settings());
+    if (n) { lists.delete(f.path); notes.set(f.path, n); return true; }
+    const list = readPrayerList(file, settings());
+    if (list) { notes.delete(f.path); lists.set(f.path, list); return true; }
+    return forget(f.path);
   }
 
   async function loadAll() {
     notes.clear();
+    lists.clear();
     for (const f of v.getMarkdownFiles()) await readFile(f);
     rebuild();
   }
@@ -81,8 +96,8 @@ function makeStore(plugin) {
     const onChange = f => { readFile(f).then(changed => { if (changed) schedule(); }); };
     if (app.metadataCache && app.metadataCache.on) refs.push(app.metadataCache.on('changed', onChange));
     else { refs.push(v.on('modify', onChange)); refs.push(v.on('create', onChange)); }
-    refs.push(v.on('delete', f => { if (notes.delete(f.path)) schedule(); }));
-    refs.push(v.on('rename', (f, old) => { notes.delete(old); readFile(f).then(() => schedule()); }));
+    refs.push(v.on('delete', f => { if (forget(f.path)) schedule(); }));
+    refs.push(v.on('rename', (f, old) => { forget(old); readFile(f).then(() => schedule()); }));
     return refs;
   }
 
@@ -157,6 +172,44 @@ function makeStore(plugin) {
     plugin.focusTitleFor = f.path;
     await showFile(f);
     return f.path;
+  }
+
+  /* Add a prayer request to the one prayer list note (the `prayerList`
+     setting): made, with its heading, when it is missing; otherwise one line
+     appended with vault.process — the note is never rebuilt. Resolves to
+     { ok: true, path } or { ok: false, reason } ('empty': nothing typed;
+     'kind': the file is already another kind of note, left alone, with a
+     notice). */
+  async function addPrayer(text) {
+    let path = normalizePath(String(settings().prayerList || '').trim() || DEFAULT_SETTINGS.prayerList);
+    if (!/\.md$/i.test(path)) path += '.md';
+    const today = D.todayISO();
+    let res = null;
+    const append = f => v.process(f, cur => {
+      res = appendPrayer(cur, text, today);
+      return res.ok ? res.text : cur;
+    });
+    let f = getFile(path);
+    if (f) await append(f);
+    else {
+      res = appendPrayer('', text, today);
+      if (res.ok) {
+        await ensureFolder(path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+        try { f = await v.create(path, res.text); } catch (e) {
+          /* made meanwhile (another device, a fast second tap): append to it */
+          f = getFile(path);
+          if (!f) throw e;
+          await append(f);
+        }
+      }
+    }
+    if (!res.ok) {
+      if (res.reason === 'kind') new Notice(`Bible Notes: ${path.slice(path.lastIndexOf('/') + 1)} is already a ${res.kind} note, so prayer requests can’t go in it. Choose another file in Settings → Bible Notes → Prayer list.`);
+      return { ok: false, reason: res.reason, ...(res.kind ? { kind: res.kind } : {}) };
+    }
+    await readFile(f);
+    rebuild();
+    return { ok: true, path };
   }
 
   /* Tick a checkbox shown on Home or in a cover band. Refuses (with a
@@ -264,7 +317,7 @@ function makeStore(plugin) {
     notes,
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     loadAll, watch, readFile, rebuild, getFile, openPath,
-    createNote, toggle, setProps, renameFromTitle, addSession,
+    createNote, addPrayer, toggle, setProps, renameFromTitle, addSession,
     adoptScan, adoptApply, writeTemplatesOnce, readTemplates,
     chapterNote, openPassage, readerName, personValue,
   };

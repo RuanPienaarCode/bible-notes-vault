@@ -9,13 +9,14 @@
    ============================================================================ */
 
 const { Plugin, MarkdownView } = require('obsidian');
-const { VIEW_TYPE, DEFAULT_SETTINGS, KINDS } = require('./constants');
+const { VIEW_TYPE, DEFAULT_SETTINGS, KINDS, PRAYER } = require('./constants');
 const { makeStore } = require('./store');
 const { HomeView } = require('./view');
 const { Covers } = require('./cover');
 const { makePostProcessor, makeEditorExtension } = require('./chips');
 const { closePopover } = require('./popover');
 const { AdoptModal } = require('./adopt-modal');
+const { PrayerModal } = require('./prayer-modal');
 const { BibleNotesSettingTab } = require('./settings-tab');
 const { setTile } = require('./tiles');
 const D = require('./dates');
@@ -33,6 +34,7 @@ class BibleNotesPlugin extends Plugin {
     for (const k of KINDS) {
       this.addCommand({ id: `new-${k.id}`, name: k.command, callback: () => this.store.createNote(k.id) });
     }
+    this.addCommand({ id: 'add-prayer', name: PRAYER.command, callback: () => this.openPrayer() });
     this.addCommand({
       id: 'add-session',
       name: 'Add a study session',
@@ -115,6 +117,11 @@ class BibleNotesPlugin extends Plugin {
     if (!s || !s.open) return;
     s.open();
     if (s.openTabById) s.openTabById(this.manifest.id);
+  }
+
+  /* "Prayer request": one text input, added to the prayer list note. */
+  openPrayer() {
+    new PrayerModal(this.app, this).open();
   }
 
   async openAdopt() {

@@ -69,6 +69,72 @@ const host = (opts) => {
     assert.strictEqual(notices.length, 1);
   }
 
+  /* A prayer request: the list note and its heading are made when missing,
+     the request is appended with the Tasks created date, and it shows in
+     Praying for at once — without ever counting as a note. A second request
+     is one more line and nothing else changes. */
+  {
+    const { store, files, notices } = host();
+    const seen = notices.length; /* the notice list is shared across hosts */
+    await store.loadAll();
+    const list = 'Bible Notes/Prayer list.md';
+    assert.ok(!files.has(list));
+    const first = await store.addPrayer('  Safe travel\nfor the team  ');
+    assert.deepStrictEqual(first, { ok: true, path: list });
+    assert.strictEqual(files.get(list), `---\nbible-notes: prayer\n---\n\n## Praying for\n- [ ] Safe travel for the team ➕ ${today}\n`);
+    assert.deepStrictEqual(store.index.praying.map(p => p.task.text), ['Safe travel for the team', 'Rain for the farms'], 'newest first, dated by the ➕');
+    assert.strictEqual(store.index.notes.length, 2, 'the list is not a note');
+    assert.ok(!store.notes.has(list), 'and has no cover');
+    const before = files.get(list);
+    await store.addPrayer('Rain in the Karoo');
+    assert.strictEqual(files.get(list), before + `- [ ] Rain in the Karoo ➕ ${today}\n`);
+    assert.deepStrictEqual(store.index.praying.map(p => p.task.text).slice(0, 2), ['Safe travel for the team', 'Rain in the Karoo']);
+
+    /* Ticking one from Home marks it answered, dated from its ➕. */
+    const item = store.index.praying.find(p => p.task.text === 'Rain in the Karoo');
+    assert.strictEqual(await store.toggle(item.note, item.task, true), true);
+    assert.ok(files.get(list).includes(`- [x] Rain in the Karoo ➕ ${today} ✅ ${today}\n`));
+    await store.readFile(store.getFile(list)); /* what the metadata watcher does after a write */
+    store.rebuild();
+    assert.deepStrictEqual(store.index.answered.map(a => [a.task.text, a.days]), [['Rain in the Karoo', 0]]);
+
+    /* Nothing to add: no write, no file. */
+    assert.deepStrictEqual(await store.addPrayer('  \n '), { ok: false, reason: 'empty' });
+    assert.strictEqual(notices.length, seen);
+  }
+  /* The list lives where the setting says (folders made), and is found again
+     on the next load by its property alone. */
+  {
+    const { store, files, plugin } = host();
+    plugin.settings.prayerList = 'Faith/Lists/Prayers.md';
+    await store.addPrayer('Rain');
+    assert.ok(files.has('Faith/Lists/Prayers.md'));
+    const fresh = host();
+    fresh.files.set('Faith/Lists/Prayers.md', files.get('Faith/Lists/Prayers.md'));
+    fresh.plugin.settings.prayerList = 'Faith/Lists/Prayers.md';
+    await fresh.store.loadAll();
+    assert.ok(fresh.store.index.praying.some(p => p.task.text === 'Rain'));
+    assert.strictEqual(fresh.store.index.notes.length, 2, 'still not a note');
+  }
+  /* A note that already exists but is not yet a prayer list becomes one by one
+     property; one that is another kind is refused with a notice and left
+     as it was. */
+  {
+    const { store, files, plugin } = host();
+    files.set('Faith/Prayers.md', '# Prayers\nWords.\n');
+    plugin.settings.prayerList = 'Faith/Prayers.md';
+    assert.strictEqual((await store.addPrayer('Rain')).ok, true);
+    assert.strictEqual(files.get('Faith/Prayers.md'), `---\nbible-notes: prayer\n---\n\n# Prayers\nWords.\n\n## Praying for\n- [ ] Rain ➕ ${today}\n`);
+
+    const other = host();
+    const seenOther = other.notices.length;
+    other.plugin.settings.prayerList = `Bible Notes/Sunday/${lastSunday} Remain in me.md`;
+    const was = other.files.get(other.plugin.settings.prayerList);
+    assert.deepStrictEqual(await other.store.addPrayer('Rain'), { ok: false, reason: 'kind', kind: 'sunday' });
+    assert.strictEqual(other.files.get(other.plugin.settings.prayerList), was);
+    assert.strictEqual(other.notices.length, seenOther + 1);
+  }
+
   /* Properties, rename, a study session. */
   {
     const { store, files } = host();

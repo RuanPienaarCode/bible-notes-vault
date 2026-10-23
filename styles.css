@@ -9,7 +9,7 @@
    (fonts/OFL.txt). The font files are inlined below at build time.
 
    Colours are tokens on `body` and `body.theme-dark`. The plugin's own roots
-   (.bn-home, .bn-cover, .bn-popover) also point Obsidian's variables at these
+   (.bn-home, .bn-cover, .bn-popover, .bn-chrome, .bn-prayer-modal) also point Obsidian's variables at these
    tokens, so the host's own rules (inputs, checkboxes) paint in this palette
    instead of being fought one by one.
    ============================================================================ */
@@ -129,6 +129,9 @@ body {
   /* Each kind's fill in the donut. */
   --bn-arc-sunday: #0b0b0b; --bn-arc-community: #9a9a9a; --bn-arc-meditation: #5be35b; --bn-arc-study: #d0d0d0;
   --bn-focus: #0b0b0b; --bn-frame-shadow: 0 1px 0 rgba(0, 0, 0, 0.03), 0 24px 60px rgba(0, 0, 0, 0.07);
+  /* The dock's own edge: the card line (8%) vanishes against a white panel, so
+     the bar gets a hairline about twice as strong. */
+  --bn-dock-edge: rgba(0, 0, 0, 0.18); --bn-scrim: rgba(0, 0, 0, 0.32);
 }
 body.theme-dark {
   --bn-ground: #000000; --bn-panel: #0e0e0e; --bn-card: #181818; --bn-pill: #2a2a2a; --bn-bar: #4a4a4a;
@@ -139,12 +142,13 @@ body.theme-dark {
   --bn-g1-ink: #e8f9e9; --bn-g2-ink: #f2fff2; --bn-g3-ink: #0b0b0b;
   --bn-arc-sunday: #f4f4f4; --bn-arc-community: #7a7a7a; --bn-arc-meditation: #5be35b; --bn-arc-study: #454545;
   --bn-focus: #f4f4f4; --bn-frame-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --bn-dock-edge: rgba(255, 255, 255, 0.18); --bn-scrim: rgba(0, 0, 0, 0.55);
 }
 
 /* The three roots: our palette under Obsidian's variable names, and the font
    scoped here (never on body). The doubled class beats any single-class host
    rule. */
-.bn-home.bn-home, .bn-cover.bn-cover, .bn-popover.bn-popover {
+.bn-home.bn-home, .bn-cover.bn-cover, .bn-popover.bn-popover, .bn-chrome.bn-chrome, .bn-prayer-modal.bn-prayer-modal {
   --text-normal: var(--bn-ink); --text-muted: var(--bn-muted); --text-faint: var(--bn-faint);
   --interactive-accent: var(--bn-green); --interactive-accent-hover: var(--bn-green-hi); --text-on-accent: var(--bn-on-green);
   --background-modifier-border: var(--bn-line); --background-modifier-border-focus: var(--bn-ink);
@@ -159,11 +163,11 @@ body.theme-dark {
 .bn-ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bn-faint { color: var(--bn-muted); font-size: 12.5px; }
 
-/* Every button under the three roots starts bare. Obsidian's tablet/phone
+/* Every button under the roots starts bare. Obsidian's tablet/phone
    `.is-tablet button:not(.clickable-icon)` is 0,2,1; this is 0,2,1 too and
    comes later, so it wins. Each component below (0,3,0) then puts back what
    it needs. */
-.bn-home.bn-home button, .bn-cover.bn-cover button, .bn-popover.bn-popover button {
+.bn-home.bn-home button, .bn-cover.bn-cover button, .bn-popover.bn-popover button, .bn-chrome.bn-chrome button, .bn-prayer-modal.bn-prayer-modal button {
   font: inherit; color: inherit; background: none; box-shadow: none; border: 0; height: auto; min-height: 0;
   padding: 0; margin: 0; text-align: left; white-space: normal; cursor: pointer; border-radius: 0; -webkit-tap-highlight-color: transparent;
   /* The host centres button content and draws squircle corners
@@ -172,6 +176,8 @@ body.theme-dark {
   align-items: normal; justify-content: normal; corner-shape: round;
 }
 .bn-home.bn-home button:focus-visible, .bn-cover.bn-cover button:focus-visible, .bn-popover.bn-popover button:focus-visible,
+.bn-chrome.bn-chrome button:focus-visible, .bn-prayer-modal.bn-prayer-modal button:focus-visible,
+.bn-prayer-modal.bn-prayer-modal input.bn-prayer-input:focus-visible,
 .bn-ref:focus-visible, .bn-home.bn-home .bn-check:focus-visible, .bn-cover.bn-cover .bn-check:focus-visible {
   outline: 2px solid var(--bn-focus); outline-offset: 2px;
 }
@@ -179,6 +185,8 @@ body.theme-dark {
    plain :focus there, so keyboard users still see where they are. */
 @supports not selector(:focus-visible) {
   .bn-home.bn-home button:focus, .bn-cover.bn-cover button:focus, .bn-popover.bn-popover button:focus,
+  .bn-chrome.bn-chrome button:focus, .bn-prayer-modal.bn-prayer-modal button:focus,
+  .bn-prayer-modal.bn-prayer-modal input.bn-prayer-input:focus,
   .bn-ref:focus, .bn-home.bn-home .bn-check:focus, .bn-cover.bn-cover .bn-check:focus {
     outline: 2px solid var(--bn-focus); outline-offset: 2px;
   }
@@ -204,22 +212,38 @@ body.theme-dark {
 .bn-pill svg { width: 14px; height: 14px; stroke-width: 2.2; }
 .bn-home.bn-home .bn-pill-grey { background: var(--bn-pill); color: var(--bn-ink); }
 .bn-home.bn-home .bn-pill-green, .bn-cover.bn-cover .bn-pill-green { background: var(--bn-green); color: var(--bn-on-green); }
-.bn-home.bn-home .bn-pill-hero { background: var(--bn-hero-pill); color: var(--bn-hero-ink); }
-.bn-home.bn-home .bn-pill-hero.is-lead { background: var(--bn-hero-ink); color: var(--bn-hero); }
 .bn-home.bn-home .bn-pill-sm, .bn-cover.bn-cover .bn-pill-sm { height: 24px; padding: 0 9px; font-size: 12.5px; }
 @keyframes bn-rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 /* ---------------------------------------------------------------- Home --- */
 /* The view's ground; on a wide screen Home sits on it as a framed panel. The
    data-type selector (0,4,0) beats the host's view-content background. */
-.workspace-leaf-content[data-type="bible-notes-home"] .view-content.bn-home-view { padding: 0; background-color: var(--bn-ground); }
+.workspace-leaf-content[data-type="bible-notes-home"] .view-content.bn-home-view {
+  padding: 0; background-color: var(--bn-ground);
+  /* The page scrolls in .bn-scroll; the dock floats over it in .bn-chrome. */
+  position: relative; overflow: hidden;
+}
+/* The dock's bar, and how far the page must scroll past it. On a phone with
+   Obsidian's floating navigation bar the dock stands above that bar (its
+   height and offset are Obsidian's own variables), else above the safe area. */
+.bn-home-view {
+  --bn-dock-h: 64px;
+  --bn-dock-bottom: max(16px, calc(10px + env(safe-area-inset-bottom, 0px)));
+  --bn-clear: calc(var(--bn-dock-bottom) + var(--bn-dock-h) + 48px);
+}
+.is-phone.is-floating-nav .bn-home-view, .is-phone.auto-full-screen .bn-home-view {
+  --bn-dock-bottom: calc(var(--navbar-bottom-offset, 12px) + var(--navbar-height, 44px) + 16px);
+}
+.bn-scroll { position: absolute; top: 0; right: 0; bottom: 0; left: 0; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .bn-home.bn-home {
-  box-sizing: border-box; min-height: 100%; padding: 16px 16px 56px; background: var(--bn-panel);
+  box-sizing: border-box; min-height: 100%; padding: 16px 16px var(--bn-clear); background: var(--bn-panel);
   display: flex; flex-direction: column; gap: 14px; font-size: 15px; line-height: 1.35;
 }
-.bn-home.bn-wide { padding: 24px 24px 56px; gap: 16px; }
+.bn-home.bn-wide { padding: 24px 24px var(--bn-clear); gap: 16px; }
+/* The framed panel keeps its own 32px of padding, so its bottom margin makes
+   up the rest of the room the dock needs. */
 .bn-home.bn-xwide {
-  min-height: 0; max-width: 1240px; margin: 28px auto 40px; width: calc(100% - 48px);
+  min-height: 0; max-width: 1240px; margin: 28px auto calc(var(--bn-clear) - 32px); width: calc(100% - 48px);
   padding: 30px 32px 32px; border-radius: 32px; box-shadow: var(--bn-frame-shadow);
 }
 
@@ -258,14 +282,13 @@ body.theme-dark {
 .bn-list { display: flex; flex-direction: column; }
 
 /* Start: the Sunday tile. */
-.bn-start { justify-content: space-between; gap: 16px; min-height: 196px; }
+.bn-start { justify-content: space-between; gap: 16px; min-height: 150px; }
 .bn-home.bn-home .bn-start-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; width: 100%; }
 .bn-start-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .bn-run { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
 .bn-run .bn-big { font-size: 40px; }
 .bn-run-cap { font-size: 13px; color: var(--bn-hero-muted); }
 .bn-start-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; font-size: 12.5px; color: var(--bn-hero-muted); }
-.bn-start-pills { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* Tasks: Still open, Praying for, and the cover's carry list. */
 .bn-home.bn-home .bn-task, .bn-cover.bn-cover .bn-task {
@@ -380,7 +403,6 @@ body.theme-dark {
 @media (hover: hover) {
   .bn-home.bn-home .bn-start-main:hover .bn-arrow, .bn-home.bn-home .bn-arrow:hover, .bn-cover.bn-cover .bn-arrow:hover { transform: scale(1.06); }
   .bn-home.bn-home .bn-circle:hover, .bn-cover.bn-cover .bn-circle:hover { background: var(--bn-pill); }
-  .bn-home.bn-home .bn-pill-hero:hover { background: var(--bn-hero-muted); color: var(--bn-hero); }
   .bn-home.bn-home .bn-pill-green:hover { background: var(--bn-green-hi); }
   .bn-home.bn-home .bn-pill-btn:hover { background: var(--bn-bar); }
   .bn-home.bn-home .bn-rrow:hover .bn-rrow-t, .bn-home.bn-home .bn-srow:hover .bn-srow-n,
@@ -391,6 +413,110 @@ body.theme-dark {
   .bn-home.bn-home .bn-task-meta:hover, .bn-cover.bn-cover .bn-task-meta:hover { color: var(--bn-ink); text-decoration: underline; text-underline-offset: 2px; }
 }
 .bn-home.bn-home .bn-arrow { transition: transform 160ms ease-out; }
+
+/* ---------------------------------------------------------------- Dock --- */
+/* The layer over Home: the dock and, when + is tapped, the sheet. It takes no
+   taps itself (the page scrolls through it); only its children do. */
+.bn-chrome.bn-chrome { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 5; pointer-events: none; }
+.bn-chrome.bn-chrome > * { pointer-events: auto; }
+/* One fixed width on every screen (the phone's is the view less a 12px gutter
+   each side); nothing here hides, shrinks or reorders. */
+.bn-chrome.bn-chrome .bn-dock {
+  position: absolute; left: 0; right: 0; bottom: var(--bn-dock-bottom); margin: 0 auto;
+  display: flex; align-items: stretch; box-sizing: border-box;
+  width: min(380px, calc(100% - 24px)); height: var(--bn-dock-h); padding: 5px;
+  border-radius: 24px; border: 1px solid var(--bn-dock-edge); background: var(--bn-panel);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.bn-chrome.bn-chrome .bn-dock-btn {
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border-radius: 18px; color: var(--bn-muted); font: 600 11px/1.2 var(--bn-f);
+}
+.bn-dock-btn .bn-icon svg { width: 20px; height: 20px; stroke-width: 2; }
+.bn-dock-l { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The middle slot: a round + standing 21px above the bar. The panel-coloured
+   ring around it cuts the bar's edge away behind it. Its own label sits where
+   the others' do. */
+.bn-dock-slot { position: relative; flex: 0 0 76px; font: 600 11px/1.2 var(--bn-f); color: var(--bn-ink); text-align: center; }
+.bn-dock-slot .bn-dock-l { position: absolute; left: 0; right: 0; bottom: 8px; }
+.bn-chrome.bn-chrome .bn-dock-plus {
+  position: absolute; top: -27px; left: 50%; width: 54px; height: 54px; margin-left: -27px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--bn-green); color: var(--bn-on-green); box-shadow: 0 0 0 4px var(--bn-panel);
+}
+.bn-dock-plus .bn-icon svg { width: 26px; height: 26px; stroke-width: 2.4; }
+.bn-dock-plus[aria-expanded="true"] .bn-icon svg { transform: rotate(45deg); }
+.bn-dock-plus .bn-icon svg { transition: transform 160ms ease-out; }
+.bn-chrome.bn-chrome .bn-dock-btn:active { background: var(--bn-card); color: var(--bn-ink); }
+
+/* The sheet. Narrow views: a bottom sheet standing where the dock is (so it
+   covers it), over a dimmed page. Wide views: a popover standing on the +, over
+   a clear scrim that only catches the tap that dismisses it. */
+.bn-chrome.bn-chrome .bn-sheet-wrap { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+.bn-scrim { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: transparent; }
+.bn-chrome.is-compact .bn-scrim { background: var(--bn-scrim); animation: bn-fade 160ms ease-out; }
+.bn-chrome.bn-chrome .bn-sheet {
+  position: absolute; left: 50%; width: 320px; margin-left: -160px; box-sizing: border-box;
+  bottom: calc(var(--bn-dock-bottom) + var(--bn-dock-h) + 32px); max-height: calc(100% - var(--bn-dock-bottom) - var(--bn-dock-h) - 48px); overflow-y: auto;
+  padding: 8px; border-radius: 22px; background: var(--bn-hero); color: var(--bn-hero-ink); --bn-focus: var(--bn-hero-ink);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25); animation: bn-sheet-in 180ms ease-out;
+}
+.bn-chrome.is-compact .bn-sheet {
+  left: 12px; right: 12px; width: auto; margin-left: 0; bottom: var(--bn-dock-bottom); max-height: calc(100% - var(--bn-dock-bottom) - 24px);
+  padding: 10px 10px 10px; border-radius: 28px;
+}
+.bn-sheet-head { display: flex; align-items: center; gap: 6px; }
+.bn-chrome.bn-chrome .bn-sheet-back { flex: none; display: grid; place-items: center; width: 40px; height: 40px; margin-left: 2px; border-radius: 50%; background: var(--bn-hero-pill); color: var(--bn-hero-ink); }
+.bn-sheet-back svg { width: 18px; height: 18px; stroke-width: 2.2; }
+.bn-chrome.bn-chrome .bn-sheet-h { margin: 0; padding: 12px 14px 8px; font: 600 14px/1.2 var(--bn-f); color: var(--bn-hero-muted); letter-spacing: 0.01em; }
+.bn-sheet-head .bn-sheet-h { padding-left: 8px; }
+.bn-sheet-list { display: flex; flex-direction: column; gap: 2px; }
+.bn-chrome.bn-chrome .bn-sheet-row {
+  display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 0 12px; box-sizing: border-box; border-radius: 18px;
+}
+.bn-sheet-ico { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--bn-hero-pill); color: var(--bn-hero-ink); }
+.bn-sheet-ico .bn-icon svg { width: 19px; height: 19px; stroke-width: 2; }
+.bn-sheet-row.is-lead .bn-sheet-ico { background: var(--bn-green); color: var(--bn-on-green); }
+.bn-sheet-t { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.bn-sheet-title { font: 500 15.5px/1.25 var(--bn-f); color: var(--bn-hero-ink); }
+.bn-sheet-sub { font: 400 12.5px/1.3 var(--bn-f); color: var(--bn-hero-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bn-chrome.bn-chrome .bn-sheet-row:active, .bn-chrome.bn-chrome .bn-sheet-back:active { background: var(--bn-hero-pill); }
+@keyframes bn-sheet-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes bn-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .bn-chrome.bn-chrome .bn-sheet, .bn-chrome.is-compact .bn-scrim { animation: none; }
+  .bn-dock-plus .bn-icon svg { transition: none; }
+}
+@media (hover: hover) {
+  .bn-chrome.bn-chrome .bn-dock-btn:hover { background: var(--bn-card); color: var(--bn-ink); }
+  .bn-chrome.bn-chrome .bn-dock-plus:hover { background: var(--bn-green-hi); }
+  .bn-chrome.bn-chrome .bn-sheet-row:hover { background: var(--bn-hero-pill); }
+  .bn-chrome.bn-chrome .bn-sheet-row.is-lead:hover .bn-sheet-ico { background: var(--bn-green-hi); }
+  .bn-chrome.bn-chrome .bn-sheet-back:hover { background: var(--bn-hero-muted); color: var(--bn-hero); }
+}
+
+/* ------------------------------------------------------- Prayer request --- */
+/* A modal, so it sits in the body, outside every other root: the roots list
+   above points Obsidian's input and button variables at the palette, and the
+   input is scoped above Obsidian's own input[type=text] and :hover rules.
+   16px, so iOS does not zoom the page when it takes focus. */
+.bn-prayer-modal.bn-prayer-modal { max-width: 460px; padding: 22px; border-radius: 26px; background: var(--bn-panel); }
+.bn-prayer-modal .bn-modal-title { margin: 0 0 6px; font: 600 22px/1.2 var(--bn-f); letter-spacing: -0.01em; color: var(--bn-ink); }
+.bn-prayer-modal .bn-dim { margin: 0 0 16px; font-size: 13.5px; line-height: 1.4; color: var(--bn-muted); }
+.bn-prayer-modal.bn-prayer-modal input.bn-prayer-input, .bn-prayer-modal.bn-prayer-modal input.bn-prayer-input:hover, .bn-prayer-modal.bn-prayer-modal input.bn-prayer-input:focus {
+  display: block; width: 100%; height: 48px; margin: 0 0 18px; padding: 0 16px; box-sizing: border-box; border: 1.5px solid transparent; border-radius: 14px;
+  background: var(--bn-card); color: var(--bn-ink); font: 500 16px var(--bn-f); box-shadow: none; corner-shape: round;
+}
+.bn-prayer-modal.bn-prayer-modal input.bn-prayer-input:focus { border-color: var(--bn-ink); outline: none; }
+.bn-prayer-modal.bn-prayer-modal input.bn-prayer-input::placeholder { color: var(--bn-faint); }
+.bn-prayer-modal.bn-prayer-modal .bn-modal-actions { gap: 10px; }
+.bn-prayer-modal.bn-prayer-modal .bn-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 88px; height: 44px; padding: 0 22px; border-radius: 999px; font: 500 15px var(--bn-f); }
+.bn-prayer-modal.bn-prayer-modal .bn-btn.mod-cta { background: var(--bn-hero); color: var(--bn-hero-ink); }
+.bn-prayer-modal.bn-prayer-modal .bn-btn.bn-btn-quiet { background: var(--bn-pill); color: var(--bn-ink); }
+.bn-prayer-modal.bn-prayer-modal .bn-btn:disabled { opacity: 0.4; cursor: default; }
+@media (hover: hover) {
+  .bn-prayer-modal.bn-prayer-modal .bn-btn.bn-btn-quiet:hover { background: var(--bn-bar); }
+}
 
 /* --------------------------------------------------------------- Cover --- */
 /* Obsidian shows its properties panel through its own variables
@@ -551,7 +677,7 @@ body.theme-dark .bn-cover.bn-cover input.bn-fpill-input { color-scheme: light; }
    44px (or close, for pills in a row), and inputs at 16px so iOS doesn't zoom
    the page when one takes focus. */
 .is-mobile .bn-home.bn-home .bn-arrow, .is-mobile .bn-cover.bn-cover .bn-arrow { width: 44px; height: 44px; }
-.is-mobile .bn-home.bn-home .bn-start-pills .bn-pill, .is-mobile .bn-home.bn-home .bn-pill-btn { height: 40px; padding: 0 14px; }
+.is-mobile .bn-home.bn-home .bn-pill-btn { height: 40px; padding: 0 14px; }
 .is-mobile .bn-home.bn-home .bn-seg-b { height: 40px; padding: 0 14px; }
 .is-mobile .bn-home.bn-home .bn-ix-note { min-height: 44px; }
 .is-mobile .bn-home.bn-home .bn-heat { height: 40px; min-width: 48px; }
@@ -560,8 +686,6 @@ body.theme-dark .bn-cover.bn-cover input.bn-fpill-input { color-scheme: light; }
 .is-mobile .bn-cover.bn-cover input.bn-fpill-input { height: 40px; font-size: 16px; }
 .is-mobile .bn-cover.bn-cover .bn-link, .is-mobile .bn-cover.bn-cover .bn-btn-quiet { min-height: 44px; }
 .is-mobile .bn-popover.bn-popover .bn-pop-row { min-height: 44px; }
-/* The phone's floating navigation bar sits over the end of the page. */
-.is-phone .bn-home.bn-home { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
 /* The "Remain in me · 18 Oct" link under a task sits inside the task's
    label: a near miss would tick the task. Pad its hit area to 44px without
    moving the line (the negative margin takes the padding back). */

@@ -9,7 +9,7 @@
    what was written up to today; a day still to come counts nothing. */
 
 const D = require('./dates');
-const { KINDS } = require('./constants');
+const { KINDS, KIND_IDS } = require('./constants');
 const { chapterKeys } = require('./scripture');
 const { allRefs } = require('./index');
 
@@ -33,11 +33,12 @@ function sessionDates(body) {
 
 /* Everything written, on the day it was written: a dated note on its date; a
    study on each of its dated sessions, or on the day it started when it has
-   none. Oldest first. */
+   none. Oldest first. Only the four kinds are written on a day: the prayer
+   list is a list, and counts nowhere here, whatever date it might carry. */
 function entries(notes) {
   const out = [];
   for (const n of notes || []) {
-    if (!n) continue;
+    if (!n || !KIND_IDS.includes(n.kind)) continue;
     const days = n.kind === 'study' ? sessionDates(n.body) : [];
     if (days.length) for (const date of days) out.push({ date, note: n });
     else if (n.date) out.push({ date: n.date, note: n });

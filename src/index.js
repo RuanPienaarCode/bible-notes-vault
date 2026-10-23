@@ -5,6 +5,7 @@
 
 const { chapterKeys, chapters, BOOKS } = require('./scripture');
 const { diffDays } = require('./dates');
+const { PRAYER_KIND } = require('./constants');
 
 const RECENT = 8;
 
@@ -56,19 +57,32 @@ function seriesIndex(notes) {
     .sort((a, b) => byNewest(a.notes[a.notes.length - 1].note, b.notes[b.notes.length - 1].note));
 }
 
+/* The prayer list is a list, not a note written on a day: its items feed
+   Praying for and Answered, and it is in none of `notes`, `recent`, the
+   passage index, the series or anything counted from them. */
 function buildIndex(input, today) {
-  const notes = input.filter(Boolean).slice().sort(byNewest);
+  const all = input.filter(Boolean).slice().sort(byNewest);
+  const notes = all.filter(n => n.kind !== PRAYER_KIND);
   const open = [], praying = [], answered = [];
-  for (const n of notes) {
+  for (const n of all) {
     for (const t of n.tasks) {
       if (t.prayer) {
         if (!t.done) praying.push({ note: n, task: t });
-        else answered.push({ note: n, task: t, days: t.doneDate && n.date ? diffDays(n.date, t.doneDate) : null });
+        else {
+          /* How long the answer took, from when the request was written down:
+             the list's own ➕ date, else the note's date. */
+          const from = t.created || n.date;
+          answered.push({ note: n, task: t, days: t.doneDate && from ? diffDays(from, t.doneDate) : null });
+        }
       } else if (!t.done) {
         open.push({ note: n, task: t });
       }
     }
   }
+  /* Newest request first, by its ➕ date or else its note's date; undated
+     last. A stable sort, so ties keep the order above. */
+  const when = p => p.task.created || p.note.date || '';
+  praying.sort((a, b) => (when(a) === when(b) ? 0 : !when(a) ? 1 : !when(b) ? -1 : when(a) < when(b) ? 1 : -1));
   answered.sort((a, b) => {
     if (a.task.doneDate && b.task.doneDate) return a.task.doneDate < b.task.doneDate ? 1 : (a.task.doneDate > b.task.doneDate ? -1 : 0);
     return a.task.doneDate ? -1 : (b.task.doneDate ? 1 : 0);

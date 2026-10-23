@@ -9,11 +9,13 @@ notes together: by scripture, by what is still open, and by what you are praying
 
 | | |
 | --- | --- |
-| **Home** | A greeting with your week in one line, then tiles. *Start* is the Sunday tile: how many Sundays in a row, the other three kinds, and *Continue Abide · part 5* when last Sunday was part of a series. Then *Still open* (with how the count moved this week), *Praying for* (with a prayer answered in the last two weeks), *Notes this week* (per day, or per week for five weeks), an *Index of passages* as a heatmap, *Days in the Word* (this month's morning meditations), *Recent notes*, *What you wrote* this month by kind, and *Series* progress. The search button opens Obsidian's quick switcher; the settings button chooses which tiles show. |
+| **Home** | A greeting with your week in one line, then tiles. *Start* is the Sunday tile: how many Sundays in a row, and a tap starts (or opens) today's Sunday note. Then *Still open* (with how the count moved this week), *Praying for* (with a prayer answered in the last two weeks), *Notes this week* (per day, or per week for five weeks), an *Index of passages* as a heatmap, *Days in the Word* (this month's morning meditations), *Recent notes*, *What you wrote* this month by kind, and *Series* progress. The settings button chooses which tiles show. |
+| **The dock** | A rounded bar floats at the bottom of Home: *Top*, *Open* (to Still open), a raised round **+**, *Prayers* (to Praying for) and *Search* (Obsidian's quick switcher). **+** is where everything starts: New Sunday note, community, meditation, study, and **Prayer request**. A row says *Open today's …* when today's note of that kind already exists. A Sunday note that could continue last week's series asks once: *Continue Abide · part 4* or *New sermon*. |
 | **Cover** | Each note opens with a round Home button and a dark hero band: its kind, a ↗ that opens its passage, a big title and its properties as pills you tap to edit. The title *is* the file name, so editing it renames the file and links follow. |
 | **Scripture as the thread** | Write `John 15:5` anywhere and it becomes a passage chip. Tap it to open the passage and see every other note on that chapter. |
 | **Still open** | Any checkbox `- [ ]` in a Bible Notes note is an open item. A new note shows what is still open from earlier, and so does Home. |
 | **Praying for** | Checkboxes under a heading that mentions prayer (*Prayer*, *Praying for*) are prayer requests. Tick one from Bible Notes and it is remembered as answered, with how long ago you first wrote it down. |
+| **Prayer list** | **+** then *Prayer request* adds one line, `- [ ] text ➕ 2026-10-25` (the Tasks plugin's created date), under `## Praying for` in ONE note (`Bible Notes/Prayer list.md`, changeable in settings; made when you add the first one). Every checkbox in that note is a prayer request, dated by its ➕. The note is a list, not a day's note: it is not in Recent notes, the week, the month or the Sunday streak. |
 | **Carry-over** | A new Sunday note starts with last Sunday's speaker and church. The series is only added when you tap *Continue …* on Home, so a one-off sermon never joins it; notes that share a series number themselves: Abide, part 4. |
 | **Templates you own** | The four templates are ordinary notes in `Templates/Bible Notes/`. Reword a heading there and the next note follows. |
 | **Adopt what you have** | *Adopt existing notes* finds sermon, community, meditation and study notes already in your vault. You review the list first; adopting adds one property and changes nothing else. |
@@ -42,6 +44,8 @@ church: Grace Church
 | Meditation | `date`, `scripture` | Read · Noticed · Prayer · Carry today |
 | Study | `started`, `scripture` | Questions · Cross references · then a dated session (Observe · Interpret · Apply) |
 
+The prayer list is the one other `bible-notes` value: `bible-notes: prayer`.
+
 A study is one note per passage that grows: *Add a session* appends a new dated block to the end.
 
 File names are `2026-10-25 Title.md` (a study is just `Romans 8.md`). A colon in a title
@@ -68,6 +72,7 @@ Bible Notes only ever does these to a note:
 - flips one checkbox (and refuses if that line changed since it was shown)
 - adds or changes a frontmatter property
 - appends a study session at the end
+- appends one prayer request line to the prayer list (and its `## Praying for` heading when the note has none)
 - renames the file from the title you typed
 
 It never rewrites what you wrote.
@@ -76,6 +81,7 @@ It never rewrites what you wrote.
 
 - *Open home* (also the book icon in the ribbon)
 - *New Sunday note*, *New community note*, *New meditation note*, *New study note*
+- *Add a prayer request*
 - *Add a study session*
 - *Show or hide raw properties*
 - *Adopt existing notes*

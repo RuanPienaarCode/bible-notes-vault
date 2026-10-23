@@ -1,16 +1,19 @@
 'use strict';
 /* Home — the Bento page. A bar (the mark, the week's pills, the quick
    switcher), the greeting with the week in one line, then tiles: Start (the
-   Sunday tile, the other kinds and "Continue <series>"), Still open, Praying
-   for (with the answered moment), notes per day or per week, the index of
-   passages as a one-hue heatmap, days in the Word, recent notes, what was
-   written this month and series progress. Built from the index on the
+   Sunday tile), Still open, Praying for (with the answered moment), notes per
+   day or per week, the index of passages as a one-hue heatmap, days in the
+   Word, recent notes, what was written this month and series progress. Over
+   the page floats the dock (src/dock.js): Top, Open, a raised + that creates
+   a note or a prayer request, Prayers and Search. Built from the index on the
    standard DOM only, so the preview harness renders the same code. */
 
-const { Platform, Menu } = require('obsidian');
+const { Platform, Menu, Notice } = require('obsidian');
 const { el, icon, button, clear, checkRow } = require('./dom');
-const { KINDS, kindOf } = require('./constants');
+const { kindOf } = require('./constants');
 const { TILES, shownTiles } = require('./tiles');
+const { mountDock } = require('./dock');
+const { sundayPlan, createRows } = require('./create');
 const { buildStreak } = require('./streak');
 const S = require('./stats');
 const D = require('./dates');
@@ -72,13 +75,19 @@ function mountHome(container, ctx) {
     openAll: false, prayAll: false, answeredOpen: false, chapter: null, indexAll: false,
     range: 'week', recentAll: false, adoptCount: 0, adoptSermons: false, seenAnswered: new Set(),
   };
-  const root = el(container, 'div', 'bn-home');
+  /* The page scrolls inside its own region; the dock and its sheet sit in a
+     layer over it (absolute in the view), so they stay put while it scrolls. */
+  const scroller = el(container, 'div', 'bn-scroll');
+  const root = el(scroller, 'div', 'bn-home');
+  const layer = el(container, 'div', 'bn-chrome');
+  let dock = null;
   /* Measured on the view, not on Home itself: the framed panel's own margins
      must not flip it back below the width that framed it. */
   const size = () => {
     const w = container.clientWidth || root.clientWidth;
     root.classList.toggle('bn-wide', w >= WIDE);
     root.classList.toggle('bn-xwide', w >= XWIDE);
+    if (dock) dock.setCompact(w < WIDE);
   };
   let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
@@ -120,6 +129,56 @@ function mountHome(container, ctx) {
     if (app && app.commands && app.commands.executeCommandById) app.commands.executeCommandById('switcher:open');
   }
 
+  /* ---- the dock ---- */
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function scrollToY(y) { scroller.scrollTo({ top: Math.max(0, y), behavior: reduceMotion() ? 'auto' : 'smooth' }); }
+
+  /* Scroll Home to a tile, leaving a little ground above it. A tile switched
+     off in Home's settings (or a first-run Home with no tiles) says so
+     instead of doing nothing. */
+  function toTile(id, name) {
+    const t = root.querySelector(`[data-tile="${id}"]`);
+    if (!t) { new Notice(`Bible Notes: “${name}” isn’t showing on Home. Turn it on with the sliders button.`); return; }
+    scrollToY(scroller.scrollTop + t.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12);
+  }
+
+  /* The create sheet's rows, today's own note first marked where the day
+     leads with it (Sunday all Sunday, Meditation on a morning). */
+  function sheetRows() {
+    const now = ctx.now ? ctx.now() : new Date();
+    const today = D.todayISO(now);
+    const lead = emphasis(today, now.getHours());
+    return createRows(store.index.notes, today).map(r => ({ ...r, lead: r.id === lead }));
+  }
+  const todayNow = () => D.todayISO(ctx.now ? ctx.now() : new Date());
+  const sundayNow = () => sundayPlan(store.index.notes, todayNow());
+
+  /* The Sunday flow — the Start tile and the sheet's Sunday row both run it.
+     Today's note: open it. A series to continue: the sheet asks once. Else
+     create. */
+  function startSunday() {
+    const plan = sundayNow();
+    if (plan.action === 'open') store.openPath(plan.path);
+    else if (plan.action === 'ask') dock.open('sunday', false);
+    else store.createNote('sunday');
+  }
+
+  function pick(r) {
+    if (r.id === 'sunday') startSunday();
+    else if (r.id === 'prayer') { if (ctx.plugin && ctx.plugin.openPrayer) ctx.plugin.openPrayer(); } else store.createNote(r.id);
+  }
+
+  dock = mountDock(layer, {
+    onTop: () => scrollToY(0),
+    onOpen: () => toTile('open', 'Still open'),
+    onPray: () => toTile('pray', 'Praying for'),
+    onSearch: openSwitcher,
+    rows: sheetRows,
+    sunday: sundayNow,
+    pick,
+    chooseSunday: series => store.createNote('sunday', series ? { series } : undefined),
+  });
+
   function taskRow(parent, item, today) {
     const { row, box } = checkRow(parent, 'bn-task', item.task.done, async (checked) => {
       row.classList.toggle('is-done', checked);
@@ -129,7 +188,9 @@ function mountHome(container, ctx) {
     box.setAttribute('aria-label', item.task.text);
     const t = el(row, 'span', 'bn-task-text');
     el(t, 'span', 'bn-task-title', item.task.text);
-    const m = el(t, 'button', 'bn-task-meta', `${item.note.title}${item.note.date ? ' · ' + D.shortDate(item.note.date, today) : ''}`);
+    /* A prayer-list request is dated by when it was written down (its ➕). */
+    const when = item.task.created || item.note.date;
+    const m = el(t, 'button', 'bn-task-meta', `${item.note.title}${when ? ' · ' + D.shortDate(when, today) : ''}`);
     m.type = 'button';
     m.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); store.openPath(item.note.path); });
     return row;
@@ -195,11 +256,11 @@ function mountHome(container, ctx) {
     menu.showAtPosition({ x: r.right, y: r.bottom + 6, left: true });
   }
 
-  /* Start: the Sunday tile. Below it the run of Sundays, then the series a
-     new note can continue (only when asked) and the other three kinds. */
-  function renderStart(parent, idx, now, today, hour) {
+  /* Start: the Sunday tile — today's note, or the way to begin one. Every
+     other note, and a prayer request, begins from the dock's +. */
+  function renderStart(parent, idx, now, today) {
     const sec = el(parent, 'section', 'bn-card bn-hero bn-start');
-    sec.setAttribute('aria-label', 'Start a note');
+    sec.setAttribute('aria-label', 'Start your Sunday note');
     const todays = idx.notes.find(n => n.kind === 'sunday' && n.date === today);
     const last = idx.notes.find(n => n.kind === 'sunday' && n.date && n.date < today);
     const main = el(sec, 'button', 'bn-start-main');
@@ -208,7 +269,7 @@ function mountHome(container, ctx) {
     el(t, 'span', 'bn-lbl', todays ? 'Today’s Sunday note' : 'Start your Sunday note');
     el(t, 'span', 'bn-sub', todays ? todays.title : (last && last.speaker ? `Last week: ${last.speaker}` : 'Message, what stuck, response'));
     icon(el(main, 'span', 'bn-arrow is-inv'), 'arrow-up-right');
-    main.addEventListener('click', () => (todays ? store.openPath(todays.path) : store.createNote('sunday')));
+    main.addEventListener('click', startSunday);
 
     const s = buildStreak(idx.notes, now);
     const foot = el(sec, 'div', 'bn-start-foot');
@@ -220,17 +281,6 @@ function mountHome(container, ctx) {
     el(meta, 'span', null, `Next: ${next}`);
     const church = churchOf(idx);
     if (church) el(meta, 'span', null, church);
-
-    const pills = el(sec, 'div', 'bn-start-pills');
-    const cont = !todays && S.nextSeries(idx.notes, today);
-    if (cont) button(pills, 'bn-pill bn-pill-green', `Continue ${cont.series} · part ${cont.part}`, () => store.createNote('sunday', { series: cont.series }), 'plus');
-    const lead = emphasis(today, hour);
-    for (const k of KINDS) {
-      if (k.id === 'sunday') continue;
-      const open = k.id !== 'study' && idx.notes.find(n => n.kind === k.id && n.date === today);
-      const b = button(pills, 'bn-pill bn-pill-hero' + (k.id === lead ? ' is-lead' : ''), k.label, () => store.createNote(k.id), k.icon);
-      b.setAttribute('aria-label', open ? `Open today’s ${k.label.toLowerCase()} note, “${open.title}”` : `New ${k.label.toLowerCase()} note`);
-    }
   }
 
   function renderOpen(parent, idx, today) {
@@ -264,7 +314,7 @@ function mountHome(container, ctx) {
       p.setAttribute('aria-expanded', String(state.answeredOpen));
     }
     if (!idx.praying.length && !idx.answered.length) {
-      el(sec, 'p', 'bn-hint', 'Checkboxes under a heading with “pray” in it become prayer requests. Tick one when it is answered.');
+      el(sec, 'p', 'bn-hint', 'Tap + and choose Prayer request to add one. Checkboxes under a heading with “pray” in any note count too. Tick one when it is answered.');
       return;
     }
     const list = el(sec, 'div', 'bn-list');
@@ -493,14 +543,21 @@ function mountHome(container, ctx) {
     const hello = el(root, 'header', 'bn-hello');
     el(hello, 'h1', 'bn-h1', greeting(hour));
     el(hello, 'p', 'bn-sub', idx.notes.length ? S.weekInsight(idx.notes, today) : 'Sunday, community, morning meditation and Bible study, in one place.');
-    const tiles = el(root, 'div', 'bn-tiles' + (idx.notes.length ? '' : ' is-solo'));
-    renderStart(tiles, idx, now, today, hour);
-    if (!idx.notes.length) { renderEmpty(root); return; }
+    /* Prayer requests alone are enough to show the tiles (the first request
+       in a fresh vault must appear under Praying for). */
+    const empty = !idx.notes.length && !idx.praying.length && !idx.answered.length;
+    const tiles = el(root, 'div', 'bn-tiles' + (empty ? ' is-solo' : ''));
+    renderStart(tiles, idx, now, today);
+    if (empty) { renderEmpty(root); dock.refresh(); return; }
     const draw = {
       open: renderOpen, pray: renderPrayer, week: renderWeek, index: renderIndex,
       days: renderDays, recent: renderRecent, kinds: renderKinds, series: renderSeries,
     };
-    for (const id of shownTiles(ctx.plugin && ctx.plugin.settings)) draw[id](tiles, idx, today);
+    for (const id of shownTiles(ctx.plugin && ctx.plugin.settings)) {
+      draw[id](tiles, idx, today);
+      tiles.lastElementChild.dataset.tile = id;
+    }
+    dock.refresh();
   }
 
   const unsub = store.subscribe(() => render());
@@ -514,7 +571,7 @@ function mountHome(container, ctx) {
   }
   return {
     render,
-    destroy() { unsub(); if (ro) ro.disconnect(); },
+    destroy() { unsub(); if (ro) ro.disconnect(); dock.destroy(); },
   };
 }
 

@@ -10,13 +10,15 @@
    without one does. The run is not cut at the edge of the grid. */
 
 const D = require('./dates');
+const { KIND_IDS } = require('./constants');
 
 const WEEKS = 13;
 const MIN_LABEL_GAP = 3;
 
 function buildStreak(notes, now) {
   const today = D.todayISO(now);
-  const list = (notes || []).filter(Boolean);
+  /* The prayer list is not a note written on a day. */
+  const list = (notes || []).filter(n => n && KIND_IDS.includes(n.kind));
 
   /* date -> 'sunday' | 'other' */
   const marks = new Map();

@@ -17,12 +17,17 @@
   #devbar a { color: #9fd3ff; }
   .panes { display: flex; gap: 16px; padding: 16px; align-items: flex-start; }
   .pane { background: var(--background-primary); border-radius: 12px; box-shadow: 0 6px 30px rgba(0,0,0,.15); overflow: auto; height: calc(100vh - 70px); }
-  .pane.phone { width: 390px; flex: none; }
+  .pane.phone { width: var(--home-w, 390px); flex: none; }
   .pane.wide { flex: 1; min-width: 0; }
   /* As in the app: the leaf fills the pane and .view-content is the scroller. */
-  .pane.phone { overflow: hidden; }
+  .pane.phone { overflow: hidden; position: relative; }
   .pane .workspace-leaf, .pane.phone .workspace-leaf-content { height: 100%; }
-  .pane.phone .view-content { height: 100%; overflow-y: auto; }
+  .pane.phone .view-content { height: 100%; }
+  /* ?phone=1: Obsidian's floating navigation bar, fixed over the bottom of
+     the pane (the app's own .mobile-navbar rules are in obsidian-app.css). */
+  .fake-navbar { display: none; position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; height: calc(var(--navbar-height) + var(--navbar-bottom-offset)); padding: 0 12px var(--navbar-bottom-offset); box-sizing: border-box; }
+  body.is-phone .fake-navbar { display: block; }
+  .fake-navbar i { display: block; height: 100%; border-radius: 22px; background: var(--background-secondary-alt, #ddd); box-shadow: 0 0 0 1px rgba(128,128,128,.3); }
   body.narrow .pane.wide { display: none; }
   body.desk .pane.phone { width: 1000px; }
   .stub-notice { position: fixed; top: 46px; right: 12px; background: #222; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 13px; z-index: 60; }
@@ -34,11 +39,11 @@
 <div id="devbar">
   <b>Bible Notes · preview</b>
   <a href="?">full</a> <a href="?empty=1">first run</a> <a href="?theme=dark">dark</a>
-  <a href="?now=2026-10-27T15:00">Tuesday afternoon</a>
+  <a href="?now=2026-10-27T15:00">Tuesday afternoon</a> <a href="?phone=1&w=375">phone</a>
   <button type="button" onclick="document.body.classList.toggle('desk')">Home width</button>
 </div>
 <div class="panes">
-  <div class="pane phone"><div class="workspace-leaf"><div class="workspace-leaf-content" data-type="bible-notes-home"><div class="view-content bn-home-view" id="home"></div></div></div></div>
+  <div class="pane phone"><div class="workspace-leaf"><div class="workspace-leaf-content" data-type="bible-notes-home"><div class="view-content bn-home-view" id="home"></div></div></div><div class="fake-navbar"><i></i></div></div>
   <div class="pane wide" id="note"></div>
 </div>
 <script src="bundle.js"></script>

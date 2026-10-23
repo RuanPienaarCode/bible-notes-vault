@@ -1,10 +1,10 @@
 'use strict';
-/* Settings: where each kind's new notes go, the template folder, the
-   BibleHub translation, the church a Sunday note starts with, where passage
-   chips appear and which tiles Home shows. */
+/* Settings: where each kind's new notes go, the template folder, the prayer
+   list note, the BibleHub translation, the church a Sunday note starts with,
+   where passage chips appear and which tiles Home shows. */
 
 const { PluginSettingTab, Setting, normalizePath } = require('obsidian');
-const { KINDS } = require('./constants');
+const { KINDS, DEFAULT_SETTINGS } = require('./constants');
 const { TILES, shownTiles } = require('./tiles');
 
 /* One line per Home tile. Start has no switch: every note begins there. */
@@ -55,6 +55,12 @@ class BibleNotesSettingTab extends PluginSettingTab {
       .setName('Template folder')
       .setDesc('Sunday.md, Community.md, Meditation.md and Study.md here shape each new note. Edit them like any note.')
       .addText(t => t.setValue(s.templateFolder).onChange(async v => { s.templateFolder = folderPath(v) || 'Templates/Bible Notes'; await save(); }));
+
+    new Setting(containerEl).setName('Prayer list').setHeading();
+    new Setting(containerEl)
+      .setName('Prayer list note')
+      .setDesc('The one note that prayer requests are added to (the + button on Home, then Prayer request), each as a checkbox under “Praying for”. It is made when you add the first one. Tick a request on Home when it is answered.')
+      .addText(t => t.setPlaceholder(DEFAULT_SETTINGS.prayerList).setValue(s.prayerList).onChange(async v => { s.prayerList = folderPath(v) || DEFAULT_SETTINGS.prayerList; await save(); }));
 
     new Setting(containerEl).setName('Scripture').setHeading();
     new Setting(containerEl)

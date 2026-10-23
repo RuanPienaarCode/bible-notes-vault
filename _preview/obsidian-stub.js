@@ -16,6 +16,12 @@ const PATHS = {
   'sliders-horizontal': 'M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4',
   home: 'M3 10 12 3l9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2ZM9 22V12h6v10',
   check: 'M20 6 9 17l-5-5',
+  /* The dock's icons, as Obsidian's bundled lucide draws them (read out of
+     app.js); an array is one path per element. */
+  'arrow-up': ['m5 12 7-7 7 7', 'M12 19V5'],
+  'list-checks': ['M13 5h8', 'M13 12h8', 'M13 19h8', 'm3 17 2 2 4-4', 'm3 7 2 2 4-4'],
+  'hand-heart': ['M11 14h2a2 2 0 0 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16', 'm14.45 13.39 5.05-4.694C20.196 8 21 6.85 21 5.75a2.75 2.75 0 0 0-4.797-1.837.276.276 0 0 1-.406 0A2.75 2.75 0 0 0 11 5.75c0 1.2.802 2.248 1.5 2.946L16 11.95', 'm2 15 6 6', 'm7 20 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a1 1 0 0 0-2.75-2.91'],
+  'chevron-left': 'm15 18-6-6 6-6',
 };
 export function setIcon(node, name) {
   const d = PATHS[name];
@@ -27,9 +33,11 @@ export function setIcon(node, name) {
   svg.setAttribute('stroke-width', '2');
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
-  const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  p.setAttribute('d', d);
-  svg.append(p);
+  for (const part of Array.isArray(d) ? d : [d]) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    p.setAttribute('d', part);
+    svg.append(p);
+  }
   node.append(svg);
 }
 export class Notice {
