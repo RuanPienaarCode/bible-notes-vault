@@ -2,7 +2,7 @@
    gym-vault and budget-vault). BOTH root main.js and root styles.css are
    BUILD OUTPUT:
      main.js    <- bundled from src/*.js
-     styles.css <- src/styles.css with Geist + Geist Mono inlined (scripts/styles.mjs)
+     styles.css <- src/styles.css with the Outfit font inlined (scripts/styles.mjs)
    An edit made directly to a root artifact is lost on the next build. */
 
 import { writeFileSync } from 'node:fs';

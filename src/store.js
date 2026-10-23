@@ -143,10 +143,11 @@ function makeStore(plugin) {
     if (f) await showFile(f, newTab);
   }
 
-  /* Start a note of `kind` (or open today's). Resolves to the path. */
-  async function createNote(kind) {
+  /* Start a note of `kind` (or open today's). `extra.series` starts a Sunday
+     note as the next part of that series. Resolves to the path. */
+  async function createNote(kind, extra) {
     const today = D.todayISO();
-    const plan = planNote(kind, today, { index, settings: settings(), exists: existsProbe(), templates: await readTemplates() });
+    const plan = planNote(kind, today, { index, settings: settings(), exists: existsProbe(), templates: await readTemplates() }, extra);
     if (plan.open) { await openPath(plan.open); return plan.open; }
     const target = normalizePath(plan.create);
     await ensureFolder(target.slice(0, target.lastIndexOf('/')));

@@ -1,10 +1,11 @@
 'use strict';
-/* The small card a passage chip opens: where to read it, and the other
-   notes on the same chapter. Never shows verse text. One at a time; closes
-   on Escape, an outside tap, or the page moving under it. */
+/* The small card a passage chip opens — a dark sheet: where to read it (the
+   green row), and the other notes on the same chapter. Never shows verse
+   text. One at a time; closes on Escape, an outside tap, or the page moving
+   under it. */
 
 const { el, icon } = require('./dom');
-const { kindOf, accentClass } = require('./constants');
+const { kindOf } = require('./constants');
 const { chapterKeys, passageNoteName, linkTranslation } = require('./scripture');
 const { notesOn } = require('./index');
 const D = require('./dates');
@@ -24,7 +25,7 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   closePopover();
   const store = plugin.store;
   const today = D.todayISO();
-  const pop = el(document.body, 'div', `bn-popover bn-glass ${accentClass(plugin.settings)}`.trim());
+  const pop = el(document.body, 'div', 'bn-popover');
   pop.setAttribute('role', 'dialog');
   pop.setAttribute('aria-label', ref.label);
 
@@ -41,10 +42,9 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   if (badge) el(head, 'span', 'bn-pill', badge);
   const go = el(pop, 'button', 'bn-pop-row is-primary');
   go.type = 'button';
-  icon(go, 'book-open');
   el(go, 'span', 'bn-grow', reader ? `Open in ${reader}` : (inVault ? `Open ${passageNoteName(ref)}` : 'Open in BibleHub'));
-  if (!reader && !inVault) icon(go, 'external-link', 'bn-dim');
   el(go, 'span', 'bn-kbd bn-pop-kbd', '↵').setAttribute('aria-hidden', 'true');
+  icon(go, 'arrow-up-right');
   go.addEventListener('click', () => { closePopover(); store.openPassage(ref, sourcePath); });
 
   el(pop, 'div', 'bn-pop-rule');
@@ -60,9 +60,7 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
     for (const n of others.slice(0, 5)) {
       const r = el(pop, 'button', 'bn-pop-row');
       r.type = 'button';
-      r.classList.add(`bn-k-${n.kind}`);
-      el(r, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
-      el(r, 'span', 'bn-row-emoji', kindOf(n.kind).emoji).setAttribute('aria-hidden', 'true');
+      icon(r, kindOf(n.kind).icon, 'bn-pop-kind');
       el(r, 'span', 'bn-grow bn-ellipsis', n.title);
       el(r, 'span', 'bn-dim', n.date ? D.shortDate(n.date, today) : '');
       r.addEventListener('click', () => { closePopover(); store.openPath(n.path); });

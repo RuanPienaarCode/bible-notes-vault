@@ -1,10 +1,23 @@
 'use strict';
 /* Settings: where each kind's new notes go, the template folder, the
    BibleHub translation, the church a Sunday note starts with, where passage
-   chips appear, and the accent colour. */
+   chips appear and which tiles Home shows. */
 
 const { PluginSettingTab, Setting, normalizePath } = require('obsidian');
-const { KINDS, ACCENTS, accentOf } = require('./constants');
+const { KINDS } = require('./constants');
+const { TILES, shownTiles } = require('./tiles');
+
+/* One line per Home tile. Start has no switch: every note begins there. */
+const TILE_DESC = {
+  open: 'Unticked checkboxes from your notes, with how the count moved this week.',
+  pray: 'Prayer requests, and the most recent answered one.',
+  week: 'How many notes you wrote each day this week, or each week for five weeks.',
+  index: 'Every chapter you have written about, greener the more notes it has.',
+  days: 'The days this month with a morning meditation.',
+  recent: 'Your latest notes.',
+  kinds: 'This month’s notes by kind.',
+  series: 'Each sermon series and how many parts you have written.',
+};
 
 /* A typed folder, normalised — but empty stays empty (normalizePath('')
    would be '/', the vault root). */
@@ -62,14 +75,14 @@ class BibleNotesSettingTab extends PluginSettingTab {
       .setDesc('A new Sunday note carries over the last one’s church, speaker and series. This is used when the last one has no church.')
       .addText(t => t.setValue(s.church).onChange(async v => { s.church = v.trim(); await save(); }));
 
-    new Setting(containerEl).setName('Appearance').setHeading();
-    new Setting(containerEl)
-      .setName('Accent')
-      .setDesc('The colour of passage chips, the streak and highlights in Bible Notes.')
-      .addDropdown(d => {
-        for (const [v, label] of ACCENTS) d.addOption(v, label);
-        d.setValue(accentOf(s)).onChange(async v => { s.accent = v; await save(); this.plugin.applyAccent(); });
-      });
+    new Setting(containerEl).setName('Home').setHeading();
+    const shown = new Set(shownTiles(s));
+    for (const t of TILES) {
+      new Setting(containerEl)
+        .setName(t.label)
+        .setDesc(TILE_DESC[t.id])
+        .addToggle(tg => tg.setValue(shown.has(t.id)).onChange(v => this.plugin.setTileShown(t.id, v)));
+    }
 
     new Setting(containerEl).setName('Existing notes').setHeading();
     new Setting(containerEl)

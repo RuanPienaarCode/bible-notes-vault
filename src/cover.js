@@ -1,10 +1,10 @@
 'use strict';
-/* The cover on a Bible Notes note: a breadcrumb, a glass header panel (the
-   kind's icon, its label, a big title that renames the file) and the
-   properties laid out like frontmatter — mono keys, values you tap to edit —
-   then "still open from earlier". It replaces Obsidian's inline title and
-   properties panel on these notes only; "Show raw properties" brings the
-   native panel back.
+/* The cover on a Bible Notes note, Bento: a row with a round Home button and
+   where the note sits, then the hero band — the kind, a round ↗ that opens
+   the note's passage, a big title that renames the file, and the properties
+   as pills you tap to edit (passages as green chips) — then "still open from
+   earlier". It replaces Obsidian's inline title and properties panel on these
+   notes only; "Show raw properties" brings the native panel back.
 
    Mounted beside the editor (in .cm-sizer, where Obsidian keeps its own
    inline title) and in reading view's header — never inside the editable
@@ -12,25 +12,32 @@
 
 const { Platform } = require('obsidian');
 const { el, icon, button, clear, checkRow } = require('./dom');
-const { kindOf, accentClass, ACCENT_GREEN } = require('./constants');
+const { kindOf } = require('./constants');
 const { carriedInto, partOf } = require('./index');
 const { showPassagePopover } = require('./popover');
 const D = require('./dates');
 
+/* Passages lead, as on the Bento board; then the kind's own fields. */
 const FIELDS = {
-  sunday: ['date', 'speaker', 'series', 'scripture', 'church'],
-  community: ['date', 'people', 'scripture'],
-  meditation: ['date', 'scripture'],
-  study: ['started', 'scripture'],
+  sunday: ['scripture', 'date', 'speaker', 'series', 'church'],
+  community: ['scripture', 'date', 'people'],
+  meditation: ['scripture', 'date'],
+  study: ['scripture', 'started'],
 };
-/* LABELS name a field for a screen reader and its input; KEYS are what the
-   row shows, set in mono like a frontmatter key. */
+/* LABELS name a field for a screen reader, its tooltip and its input. */
 const LABELS = { date: 'Date', started: 'Started', speaker: 'Speaker', series: 'Series', scripture: 'Passage', church: 'Church', people: 'Who was there' };
-const KEYS = { date: 'date', started: 'started', speaker: 'speaker', series: 'series', scripture: 'passage', church: 'church', people: 'people' };
 const PLACEHOLDER = { date: 'Add a date', started: 'Add a date', speaker: 'Add speaker', series: 'Add series', scripture: 'Add passage', church: 'Add church', people: 'Add people' };
+/* What the row above the band calls each kind's notes. */
+const PLACE = { sunday: 'Sunday notes', community: 'Community', meditation: 'Meditations', study: 'Bible study' };
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
 const list = v => (Array.isArray(v) ? v : (v === null || v === undefined || v === '' ? [] : [v])).map(String);
+
+/* "Sun 25 Oct", with the year when it is not this year's. */
+function pillDate(iso, today) {
+  const s = D.stampDate(iso);
+  return iso.slice(0, 4) === today.slice(0, 4) ? s.slice(0, -5) : s;
+}
 
 /* Stop the editor underneath from treating a tap or a key in the band as
    its own (moving the cursor, running a hotkey). */
@@ -38,6 +45,11 @@ function shield(node) {
   for (const ev of ['mousedown', 'pointerdown', 'click', 'keydown', 'keyup', 'input', 'beforeinput', 'paste']) {
     node.addEventListener(ev, e => e.stopPropagation());
   }
+}
+
+function firstRef(note) {
+  for (const e of note.scripture) if (e.refs.length) return e.refs[0];
+  return null;
 }
 
 class Covers {
@@ -57,7 +69,7 @@ class Covers {
     for (const leaf of this.plugin.app.workspace.getLeavesOfType('markdown')) {
       const c = leaf.view && leaf.view.containerEl;
       if (!c) continue;
-      c.classList.remove('bn-note', 'bn-raw', ACCENT_GREEN);
+      c.classList.remove('bn-note', 'bn-raw');
       c.querySelectorAll('.bn-cover').forEach(removeCover);
     }
   }
@@ -66,9 +78,6 @@ class Covers {
     if (!view || !view.containerEl) return;
     const c = view.containerEl;
     const note = view.file ? this.store.notes.get(view.file.path) : null;
-    /* On every markdown leaf, not only Bible Notes notes: with "passage chips
-       in every note" on, a chip in any note takes the accent. */
-    c.classList.toggle(ACCENT_GREEN, !!accentClass(this.plugin.settings));
     if (!note) {
       c.classList.remove('bn-note', 'bn-raw');
       c.querySelectorAll('.bn-cover').forEach(removeCover);
@@ -100,7 +109,7 @@ class Covers {
     cover._bnView = view;
     /* Never redraw under someone typing in the band. */
     if (cover.contains(document.activeElement) && cover.dataset.path === note.path) { cover._bnStale = true; return; }
-    const sig = signature(note, this.store.index, this.raw.has(note.path), this.expanded.has(note.path), accentClass(this.plugin.settings));
+    const sig = signature(note, this.store.index, this.raw.has(note.path), this.expanded.has(note.path), D.todayISO());
     if (cover.dataset.sig === sig && cover.dataset.path === note.path) return;
     cover.dataset.sig = sig;
     cover.dataset.path = note.path;
@@ -114,25 +123,40 @@ class Covers {
     const k = kindOf(note.kind);
     if (cover._bnRO) { cover._bnRO.disconnect(); cover._bnRO = null; }
     clear(cover);
-    cover.className = `bn-cover kind-${note.kind} bn-k-${note.kind} ${accentClass(this.plugin.settings)}`.trim();
+    cover.className = `bn-cover bn-k-${note.kind}`;
     const inner = el(cover, 'div', 'bn-cover-inner');
-    /* Where this note sits: kind, then its file name. */
-    const crumb = el(inner, 'div', 'bn-crumb bn-ellipsis');
-    crumb.appendChild(document.createTextNode(`${k.label} / `));
+
+    /* Home, and where this note sits. */
+    const nav = el(inner, 'div', 'bn-nav');
+    const home = el(nav, 'button', 'bn-circle');
+    home.type = 'button';
+    home.setAttribute('aria-label', 'Bible Notes home');
+    home.title = 'Bible Notes home';
+    icon(home, 'home');
+    home.addEventListener('click', () => this.plugin.activateHome());
+    const crumb = el(nav, 'span', 'bn-crumb');
+    crumb.appendChild(document.createTextNode(`${PLACE[note.kind]} / `));
     el(crumb, 'strong', null, note.basename);
 
-    const hdr = el(inner, 'div', 'bn-glass bn-hdr');
-    const top = el(hdr, 'div', 'bn-hdr-top');
-    el(top, 'span', 'bn-hdr-em', k.emoji).setAttribute('aria-hidden', 'true');
-    const kind = el(top, 'span', 'bn-hdr-k');
-    const kname = el(kind, 'strong');
-    el(kname, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
-    kname.appendChild(document.createTextNode(k.button));
+    const hero = el(inner, 'section', 'bn-nhero');
+    hero.setAttribute('aria-label', `${k.button}: ${note.title}`);
+    const top = el(hero, 'div', 'bn-nhero-top');
+    const kind = el(top, 'span', 'bn-nhero-k');
+    icon(kind, k.icon);
     const sub = kindSub(note, index);
-    if (sub) kind.appendChild(document.createTextNode(sub));
+    el(kind, 'span', null, sub ? `${k.label} · ${sub}` : k.button);
+    const ref = firstRef(note);
+    if (ref) {
+      const go = el(top, 'button', 'bn-arrow is-inv');
+      go.type = 'button';
+      go.setAttribute('aria-label', `Open ${ref.label}`);
+      go.title = `Open ${ref.label}`;
+      icon(go, 'arrow-up-right');
+      go.addEventListener('click', () => store.openPassage(ref, note.path));
+    }
 
     /* The title IS the file name (minus its date). */
-    const title = el(hdr, 'textarea', 'bn-title');
+    const title = el(hero, 'textarea', 'bn-title');
     title.rows = 1;
     title.value = note.title;
     title.placeholder = k.label;
@@ -196,13 +220,13 @@ class Covers {
       setTimeout(tick, 30);
     }
 
-    const props = el(inner, 'div', 'bn-props');
+    const props = el(hero, 'div', 'bn-fields');
     props.setAttribute('role', 'group');
     props.setAttribute('aria-label', 'Properties');
     for (const key of FIELDS[note.kind]) this.prop(props, note, key, view);
 
     const tools = el(inner, 'div', 'bn-cover-tools');
-    if (note.kind === 'study') button(tools, 'bn-btn bn-btn-quiet', 'Add a session', () => store.addSession(note.path), 'plus');
+    if (note.kind === 'study') button(tools, 'bn-btn-quiet', 'Add a session', () => store.addSession(note.path), 'plus');
     const raw = this.raw.has(note.path);
     button(tools, 'bn-link', raw ? 'Hide raw properties' : 'Show raw properties', () => {
       if (raw) this.raw.delete(note.path); else this.raw.add(note.path);
@@ -215,10 +239,11 @@ class Covers {
       const bar = el(inner, 'button', 'bn-carry' + (open ? ' is-open' : ''));
       bar.type = 'button';
       bar.setAttribute('aria-expanded', String(open));
-      icon(bar, open ? 'chevron-down' : 'chevron-right', 'bn-carry-chev');
-      el(bar, 'span', 'bn-grow', `${plural(carried.length, 'thing')} still open from earlier`);
+      el(bar, 'span', 'bn-pill bn-pill-green bn-pill-sm', String(carried.length));
+      el(bar, 'span', 'bn-grow', `${carried.length === 1 ? 'thing' : 'things'} still open from earlier`);
       const from = [...new Set(carried.map(c => c.note.title))].slice(0, 2).join(' · ');
-      el(bar, 'span', 'bn-dim bn-ellipsis bn-carry-from', from);
+      el(bar, 'span', 'bn-carry-from', from);
+      icon(bar, 'chevron-right', 'bn-carry-chev');
       bar.addEventListener('click', () => {
         if (open) this.expanded.delete(note.path); else this.expanded.add(note.path);
         this.refresh(view);
@@ -226,76 +251,80 @@ class Covers {
       if (open) {
         const listEl = el(inner, 'div', 'bn-carry-list');
         for (const item of carried.slice(0, 8)) {
-          const { row, box } = checkRow(listEl, 'bn-row bn-task', false, async checked => {
+          const { row, box } = checkRow(listEl, 'bn-task', false, async checked => {
             const ok = await store.toggle(item.note, item.task, checked);
             if (!ok) box.checked = !checked;
           });
           box.setAttribute('aria-label', item.task.text);
           const t = el(row, 'span', 'bn-task-text');
           el(t, 'span', 'bn-task-title', item.task.text);
-          const m = el(t, 'button', `bn-task-meta bn-k-${item.note.kind}`);
+          const m = el(t, 'button', 'bn-task-meta', item.note.title);
           m.type = 'button';
-          el(m, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
-          m.appendChild(document.createTextNode(item.note.title));
           m.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); store.openPath(item.note.path); });
         }
-        if (carried.length > 8) el(listEl, 'p', 'bn-dim bn-carry-more', `and ${carried.length - 8} more on Home`);
+        if (carried.length > 8) el(listEl, 'p', 'bn-carry-more', `and ${carried.length - 8} more on Home`);
       }
     }
   }
 
-  /* One property row: label, then the value as a button that turns into an
-     input in place. */
+  /* One property as a pill that turns into an input in place. Passages are
+     green chips (each opens its card) with a round pencil to edit them. */
   prop(parent, note, key, view) {
     const store = this.store;
-    const row = el(parent, 'div', 'bn-pr');
-    el(row, 'span', 'bn-prop-label', KEYS[key]);
-    const cell = el(row, 'div', 'bn-prop-value');
+    const today = D.todayISO();
+    const cell = el(parent, 'span', 'bn-field');
     const value = key === 'date' || key === 'started' ? (note.fm[key] ? String(note.fm[key]) : '') : list(note.fm[key]).join(key === 'scripture' ? '; ' : ', ');
 
     const show = () => {
       clear(cell);
       if (key === 'scripture' && note.scripture.length) {
-        const wrap = el(cell, 'span', 'bn-chips');
         for (const e of note.scripture) {
           if (e.refs.length) {
             for (const r of e.refs) {
-              const chip = el(wrap, 'button', 'bn-keycap bn-chip', r.label);
+              const chip = el(cell, 'button', 'bn-chip');
               chip.type = 'button';
               chip.setAttribute('aria-haspopup', 'dialog');
+              icon(chip, 'book-open');
+              el(chip, 'span', null, r.label);
               chip.addEventListener('click', ev => { ev.stopPropagation(); showPassagePopover(this.plugin, r, chip, note.path); });
             }
           } else {
-            const bad = el(wrap, 'span', 'bn-pill bn-pill-bad', e.raw);
+            const bad = el(cell, 'span', 'bn-fpill is-bad', e.raw);
             bad.title = 'Not recognised as a passage';
           }
         }
-        button(wrap, 'bn-prop-edit', null, edit, 'pencil').setAttribute('aria-label', 'Edit passage');
+        const pen = button(cell, 'bn-fpill bn-fpill-icon', null, edit, 'pencil');
+        pen.setAttribute('aria-label', 'Edit passage');
+        pen.title = 'Edit passage';
         return;
       }
-      const b = el(cell, 'button', 'bn-prop-btn' + (value ? '' : ' is-empty'));
+      const b = el(cell, 'button', 'bn-fpill' + (value ? '' : ' is-empty'));
       b.type = 'button';
-      if (key === 'series' && value) {
-        const tok = el(b, 'span', 'bn-tok bn-k-study');
-        el(tok, 'i', 'bn-dot').setAttribute('aria-hidden', 'true');
-        tok.appendChild(document.createTextNode(value));
-        const part = partOf(store.index, note);
-        if (part) el(tok, 'em', null, `#${part}`);
+      b.title = LABELS[key];
+      if (!value) {
+        icon(b, 'plus');
+        el(b, 'span', null, PLACEHOLDER[key]);
       } else if ((key === 'date' || key === 'started') && D.isRealISO(value)) {
-        b.classList.add('is-mono');
-        b.appendChild(document.createTextNode(`${value} `));
-        el(b, 'span', 'bn-dim', D.DAYS[D.weekday(value)].slice(0, 3));
+        b.textContent = pillDate(value, today);
+        b.setAttribute('aria-label', `${LABELS[key]}: ${D.longDate(value)}`);
+      } else if (key === 'series') {
+        b.textContent = value;
+        const part = partOf(store.index, note);
+        if (part) el(b, 'em', null, ` · part ${part}`);
+        b.setAttribute('aria-label', `${LABELS[key]}: ${value}${part ? `, part ${part}` : ''}`);
       } else if (key === 'people' && note.people.length) {
-        for (const p of note.people) el(b, 'span', 'bn-tok' + (p.linked ? ' is-linked' : ''), p.name);
+        b.textContent = note.people.map(p => p.name).join(', ');
+        b.setAttribute('aria-label', `${LABELS[key]}: ${b.textContent}`);
       } else {
-        b.textContent = value || PLACEHOLDER[key];
+        b.textContent = value;
+        b.setAttribute('aria-label', `${LABELS[key]}: ${value}`);
       }
       b.addEventListener('click', edit);
     };
 
     const edit = () => {
       clear(cell);
-      const input = el(cell, 'input', 'bn-prop-input');
+      const input = el(cell, 'input', 'bn-fpill-input');
       input.type = key === 'date' || key === 'started' ? 'date' : 'text';
       input.value = value;
       input.placeholder = key === 'scripture' ? 'John 15:1-8; Psalm 1' : (key === 'people' ? 'Names, separated by commas' : PLACEHOLDER[key]);
@@ -345,11 +374,11 @@ class Covers {
   }
 }
 
-/* The line under the kind in the header: a Sunday note's series and part. */
+/* The line beside the kind in the band: a Sunday note's series and part. */
 function kindSub(note, index) {
   if (note.kind !== 'sunday' || !note.series) return '';
   const part = partOf(index, note);
-  return part ? `${note.series} · part ${part}` : note.series;
+  return part ? `${note.series}, part ${part}` : note.series;
 }
 
 /* What a typed value is written as. Empty removes the property. */
@@ -377,10 +406,11 @@ function suggestions(index, key) {
 }
 
 /* Everything the band shows, as one string — when it is unchanged the band
-   is left alone (no flicker, no lost focus). */
-function signature(note, index, raw, expanded, accent) {
+   is left alone (no flicker, no lost focus). Today is in it because the date
+   pill drops the year only for this year's dates. */
+function signature(note, index, raw, expanded, today) {
   const carried = carriedInto(index, note).map(c => c.task.raw + c.note.path).join('|');
-  return JSON.stringify([note.path, note.title, note.kind, FIELDS[note.kind].map(k => note.fm[k]), partOf(index, note), carried, raw, expanded, accent]);
+  return JSON.stringify([note.path, note.title, note.kind, FIELDS[note.kind].map(k => note.fm[k]), partOf(index, note), carried, raw, expanded, today.slice(0, 4)]);
 }
 
 /* The band sits above the editor's text; when its height changes the
