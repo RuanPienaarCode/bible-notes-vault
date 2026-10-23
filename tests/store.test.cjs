@@ -37,13 +37,13 @@ const host = (opts) => {
   }
 
   /* A new Sunday note: created where settings say, last Sunday's speaker and
-     series carried, opened, title focused; asking again opens the same note. */
+     church carried (never its series), opened, title focused; asking again opens the same note. */
   {
     const { store, files, opened, openStates, revealed, plugin } = host();
     await store.loadAll();
     const path = await store.createNote('sunday');
     assert.strictEqual(path, `Bible Notes/Sunday/${today} Sunday.md`);
-    assert.ok(files.get(path).startsWith(`---\nbible-notes: sunday\ndate: ${today}\nspeaker: Ps. Andrew\nseries: Abide\nchurch: Grace Church\n---\n\n## Message\n`));
+    assert.ok(files.get(path).startsWith(`---\nbible-notes: sunday\ndate: ${today}\nspeaker: Ps. Andrew\nchurch: Grace Church\n---\n\n## Message\n`));
     assert.deepStrictEqual(opened, [path]);
     /* Opened as the active leaf and brought to the front — from Home, the
        note would otherwise open in a tab nobody can see. */

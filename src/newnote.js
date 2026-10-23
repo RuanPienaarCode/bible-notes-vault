@@ -20,8 +20,10 @@ function freePath(dir, base, exists, self) {
 
 /* → { open: path } when today's note of this kind already exists (a study is
    never "today's"), else { create: path, text }. A Sunday note carries the
-   speaker, series and church of the most recent Sunday; nothing is
-   invented, and an empty field is left out rather than written blank. */
+   speaker and church of the most recent Sunday, but not its series: a
+   one-off sermon would otherwise join the last series as its next part.
+   Nothing is invented, and an empty field is left out rather than written
+   blank. */
 function planNote(kind, today, ctx) {
   const { index, settings, exists } = ctx;
   if (kind !== 'study') {
@@ -33,7 +35,6 @@ function planNote(kind, today, ctx) {
   if (kind === 'sunday') {
     const last = index.notes.find(n => n.kind === 'sunday' && n.date && n.date < today);
     if (last && last.speaker) fm.speaker = last.speaker;
-    if (last && last.series) fm.series = last.series;
     const church = (last && last.church) || settings.church;
     if (church) fm.church = church;
   }

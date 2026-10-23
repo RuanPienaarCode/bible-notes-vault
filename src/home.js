@@ -169,10 +169,7 @@ function mountHome(container, ctx) {
     if (kind === 'study') return 'Questions and sessions';
     const last = idx.notes.find(n => n.kind === 'sunday' && n.date && n.date < today);
     if (!last) return 'Message, what stuck, response';
-    const bits = [];
-    if (last.series) bits.push(last.series, `part ${(partOf(idx, last) || 0) + 1}`);
-    if (last.speaker) bits.push(last.speaker);
-    return bits.length ? bits.join(' · ') : 'Message, what stuck, response';
+    return last.speaker ? `Last week: ${last.speaker}` : 'Message, what stuck, response';
   }
 
   function renderOpen(parent, idx, today) {

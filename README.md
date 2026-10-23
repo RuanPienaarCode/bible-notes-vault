@@ -14,7 +14,7 @@ praying for.
 | **Scripture as the thread** | Write `John 15:5` anywhere and it becomes a passage chip. Tap it to open the passage and see every other note on that chapter. |
 | **Still open** | Any checkbox `- [ ]` in a Bible Notes note is an open item. A new note shows what is still open from earlier, and so does Home. |
 | **Praying for** | Checkboxes under a heading that mentions prayer (*Prayer*, *Praying for*) are prayer requests. Tick one from Bible Notes and it is remembered as answered, with how long ago you first wrote it down. |
-| **Carry-over** | A new Sunday note starts with last Sunday's speaker, series and church. Series notes number themselves: Abide, part 4. |
+| **Carry-over** | A new Sunday note starts with last Sunday's speaker and church. The series is left for you to fill in; notes that share a series number themselves: Abide, part 4. |
 | **Templates you own** | The four templates are ordinary notes in `Templates/Bible Notes/`. Reword a heading there and the next note follows. |
 | **Adopt what you have** | *Adopt existing notes* finds sermon, community, meditation and study notes already in your vault. You review the list first; adopting adds one property and changes nothing else. |
 | **Desktop and mobile** | Built for taking notes on a phone during the sermon. Follows your theme, light and dark. |

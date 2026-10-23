@@ -22,12 +22,14 @@ const olderSunday = note('Church/Sunday Sermons/2026-10-11 Peace.md',
 const todayMed = note('Faith/Meditation/2026-10-25 Meditation.md', '---\nbible-notes: meditation\ndate: 2026-10-25\n---\n');
 const index = buildIndex([olderSunday, lastSunday, todayMed], '2026-10-25');
 
-/* A new Sunday note: speaker, series and church carry over from the most
-   recent Sunday; empty fields are left out; the body is the template. */
+/* A new Sunday note: speaker and church carry over from the most recent
+   Sunday; the series does not (a one-off sermon would otherwise join the
+   last series and number itself "part 2"); empty fields are left out; the
+   body is the template. */
 {
   const p = planNote('sunday', '2026-10-25', { index, settings: SETTINGS, exists: existsIn([]), templates: {} });
   assert.strictEqual(p.create, 'Church/Sunday Sermons/2026-10-25 Sunday.md');
-  assert.strictEqual(p.text, '---\nbible-notes: sunday\ndate: 2026-10-25\nspeaker: Ps. Andrew\nseries: Abide\nchurch: Grace Church\n---\n\n## Message\n\n## What stuck\n\n## Response\n\n## Questions\n');
+  assert.strictEqual(p.text, '---\nbible-notes: sunday\ndate: 2026-10-25\nspeaker: Ps. Andrew\nchurch: Grace Church\n---\n\n## Message\n\n## What stuck\n\n## Response\n\n## Questions\n');
 }
 
 /* The first Sunday ever: church from settings, nothing else invented. */
