@@ -674,22 +674,32 @@ body.theme-dark .bn-cover.bn-cover input.bn-fpill-input { color-scheme: light; }
 
 /* ---------------------------------------------------------------- Phone --- */
 /* Obsidian marks its phone and tablet apps with .is-mobile: every tap target
-   44px (or close, for pills in a row), and inputs at 16px so iOS doesn't zoom
-   the page when one takes focus. */
+   44px (Apple's minimum, measured on iPhone 11 and 11 Pro sizes), and inputs
+   at 16px so iOS doesn't zoom the page when one takes focus. */
 .is-mobile .bn-home.bn-home .bn-arrow, .is-mobile .bn-cover.bn-cover .bn-arrow { width: 44px; height: 44px; }
-.is-mobile .bn-home.bn-home .bn-pill-btn { height: 40px; padding: 0 14px; }
-.is-mobile .bn-home.bn-home .bn-seg-b { height: 40px; padding: 0 14px; }
+.is-mobile .bn-home.bn-home .bn-pill-btn { height: 44px; padding: 0 14px; }
+.is-mobile .bn-home.bn-home .bn-seg-b { height: 44px; padding: 0 14px; }
 .is-mobile .bn-home.bn-home .bn-ix-note { min-height: 44px; }
-.is-mobile .bn-home.bn-home .bn-heat { height: 40px; min-width: 48px; }
-.is-mobile .bn-cover.bn-cover .bn-chip, .is-mobile .bn-cover.bn-cover .bn-fpill { height: 40px; padding: 0 14px; }
-.is-mobile .bn-cover.bn-cover .bn-fpill-icon { width: 40px; padding: 0; }
-.is-mobile .bn-cover.bn-cover input.bn-fpill-input { height: 40px; font-size: 16px; }
+.is-mobile .bn-home.bn-home .bn-heat { height: 44px; min-width: 48px; }
+.is-mobile .bn-cover.bn-cover .bn-chip, .is-mobile .bn-cover.bn-cover .bn-fpill { height: 44px; padding: 0 14px; }
+.is-mobile .bn-cover.bn-cover .bn-fpill-icon { width: 44px; padding: 0; }
+.is-mobile .bn-cover.bn-cover input.bn-fpill-input { height: 44px; font-size: 16px; }
 .is-mobile .bn-cover.bn-cover .bn-link, .is-mobile .bn-cover.bn-cover .bn-btn-quiet { min-height: 44px; }
 .is-mobile .bn-popover.bn-popover .bn-pop-row { min-height: 44px; }
 /* The "Remain in me · 18 Oct" link under a task sits inside the task's
    label: a near miss would tick the task. Pad its hit area to 44px without
    moving the line (the negative margin takes the padding back). */
 .is-mobile .bn-home.bn-home .bn-task-meta, .is-mobile .bn-cover.bn-cover .bn-task-meta { padding: 14px 0; margin: -14px 0; }
+/* A short view (a phone on its side, 414px tall): above the dock there is
+   room for two of the five create rows. The sheet stands where the dock is
+   instead, wider, with its rows in two columns, so all five show at once. */
+@media (max-height: 520px) {
+  .bn-chrome.bn-chrome .bn-sheet, .bn-chrome.is-compact .bn-sheet {
+    left: 12px; right: 12px; width: auto; max-width: 640px; margin: 0 auto;
+    bottom: var(--bn-dock-bottom); max-height: calc(100% - var(--bn-dock-bottom) - 16px);
+  }
+  .bn-sheet-list { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 6px; }
+}
 
 @media (max-width: 480px) {
   .bn-nhero { padding: 18px; }
