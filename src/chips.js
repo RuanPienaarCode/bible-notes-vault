@@ -6,14 +6,43 @@
 
 const { editorInfoField, Platform } = require('obsidian');
 const { ViewPlugin, Decoration, EditorView } = require('@codemirror/view');
-const { RangeSetBuilder } = require('@codemirror/state');
+const { RangeSetBuilder, StateEffect } = require('@codemirror/state');
 const { parseRefs } = require('./scripture');
+const { visibleRefs, mergeLineRanges, LineStates } = require('./chip-scan');
 const { showPassagePopover } = require('./popover');
 
 const SKIP = 'code, pre, a, .bn-ref, .frontmatter, .metadata-container, .bn-cover';
 
 function chipsOn(plugin, path) {
   return plugin.settings.chipsEverywhere || (!!path && plugin.store.notes.has(path));
+}
+
+/* Sent to every Live Preview editor when whether a note gets chips may have
+   changed (the store loaded, a note was adopted, the setting was toggled);
+   the editor extension rebuilds its marks on it. */
+const refreshChips = StateEffect.define();
+
+/* Whether reading view last drew chips for a path, so a refresh re-renders
+   only the previews whose answer has since changed. */
+const drawn = new Map();
+
+/* Tell every open markdown view to re-decide its chips: Live Preview through
+   the effect, reading view by re-rendering when its answer changed. */
+function refreshChipViews(plugin) {
+  for (const leaf of plugin.app.workspace.getLeavesOfType('markdown')) {
+    const view = leaf.view;
+    if (!view) continue;
+    const cm = view.editor && view.editor.cm;
+    if (cm && cm.dispatch) {
+      try { cm.dispatch({ effects: refreshChips.of(null) }); } catch (e) { console.error('bible-notes chips', e); }
+    }
+    const path = view.file ? view.file.path : null;
+    const now = path ? chipsOn(plugin, path) : null;
+    if (path && view.previewMode && drawn.has(path) && drawn.get(path) !== now) {
+      drawn.set(path, now);
+      try { view.previewMode.rerender(true); } catch (e) { console.error('bible-notes chips', e); }
+    }
+  }
 }
 
 function openFrom(plugin, node, sourcePath) {
@@ -24,7 +53,9 @@ function openFrom(plugin, node, sourcePath) {
 /* Reading view. */
 function makePostProcessor(plugin) {
   return (root, ctx) => {
-    if (!chipsOn(plugin, ctx.sourcePath)) return;
+    const on = chipsOn(plugin, ctx.sourcePath);
+    drawn.set(ctx.sourcePath, on);
+    if (!on) return;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const hits = [];
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -61,33 +92,52 @@ function makeEditorExtension(plugin) {
     return info && info.file ? info.file.path : null;
   };
   /* Chips on the visible lines only, and — as in reading view — never in
-     the frontmatter or inside a code block. Telling those apart needs the
-     lines above the viewport too, so the walk starts at the top (notes are
-     short; only visible lines are parsed for references). */
-  function build(view) {
+     the frontmatter, inside a code block, or inside inline code, a link, a
+     wikilink, a URL, a comment or math (chip-scan.js masks those). Telling
+     frontmatter and fences apart needs the lines above the viewport, so
+     the state entering each line is cached (LineStates) and dropped only
+     from the first changed line down; a scroll reuses all of it. */
+  function build(view, states) {
     if (!chipsOn(plugin, pathOf(view))) return Decoration.none;
     const doc = view.state.doc;
-    const shown = view.visibleRanges.map(r => [doc.lineAt(r.from).number, doc.lineAt(r.to).number]);
+    const shown = mergeLineRanges(view.visibleRanges.map(r => [doc.lineAt(r.from).number, doc.lineAt(r.to).number]));
     if (!shown.length) return Decoration.none;
-    const isShown = n => shown.some(([a, z]) => n >= a && n <= z);
     const b = new RangeSetBuilder();
-    let front = /^---[ \t]*$/.test(doc.line(1).text);
-    let fence = null;
-    for (let n = front ? 2 : 1; n <= shown[shown.length - 1][1]; n++) {
-      const line = doc.line(n);
-      if (front) { if (/^(---|\.\.\.)[ \t]*$/.test(line.text)) front = false; continue; }
-      const f = /^[ \t]*(```|~~~)/.exec(line.text);
-      if (f) { if (!fence) fence = f[1]; else if (f[1] === fence) fence = null; continue; }
-      if (fence || !isShown(n)) continue;
-      for (const r of parseRefs(line.text)) {
-        b.add(line.from + r.start, line.from + r.end, Decoration.mark({ class: 'bn-ref', attributes: { 'data-bn-ref': r.raw } }));
-      }
+    const textOf = n => doc.line(n).text;
+    for (const [a, z] of shown) {
+      states.walk(textOf, a, z, (n, text) => {
+        const refs = visibleRefs(text);
+        if (!refs.length) return;
+        const from = doc.line(n).from;
+        for (const r of refs) {
+          b.add(from + r.start, from + r.end, Decoration.mark({ class: 'bn-ref', attributes: { 'data-bn-ref': r.raw } }));
+        }
+      });
     }
     return b.finish();
   }
   const marks = ViewPlugin.fromClass(class {
-    constructor(view) { this.decorations = build(view); }
-    update(u) { if (u.docChanged || u.viewportChanged) this.decorations = build(u.view); }
+    constructor(view) {
+      this.states = new LineStates();
+      this.doc = view.state.doc;
+      this.on = chipsOn(plugin, pathOf(view));
+      this.decorations = build(view, this.states);
+    }
+    update(u) {
+      if (u.docChanged) {
+        if (u.startState.doc !== this.doc) this.states.reset();
+        let first = u.state.doc.length;
+        u.changes.iterChangedRanges((fromA, toA, fromB) => { if (fromB < first) first = fromB; });
+        this.states.invalidateFrom(u.state.doc.lineAt(first).number);
+      }
+      this.doc = u.state.doc;
+      const forced = u.transactions.some(tr => tr.effects.some(e => e.is(refreshChips)));
+      const on = chipsOn(plugin, pathOf(u.view));
+      if (u.docChanged || u.viewportChanged || (forced && on !== this.on)) {
+        this.on = on;
+        this.decorations = build(u.view, this.states);
+      }
+    }
   }, { decorations: v => v.decorations });
   /* Desktop: a plain click on a chip opens the card instead of moving the
      cursor; with a modifier, or from the keyboard, the text edits as normal.
@@ -116,4 +166,4 @@ function makeEditorExtension(plugin) {
   return [marks, taps];
 }
 
-module.exports = { makePostProcessor, makeEditorExtension, chipsOn };
+module.exports = { makePostProcessor, makeEditorExtension, refreshChipViews, chipsOn };

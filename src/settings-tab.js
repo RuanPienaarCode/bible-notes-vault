@@ -73,7 +73,7 @@ class BibleNotesSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName('Passage chips in every note')
       .setDesc('Off: only Bible Notes notes turn references like John 15:5 into chips.')
-      .addToggle(t => t.setValue(s.chipsEverywhere).onChange(async v => { s.chipsEverywhere = v; await save(); }));
+      .addToggle(t => t.setValue(s.chipsEverywhere).onChange(async v => { s.chipsEverywhere = v; await save(); this.plugin.refreshChips(); }));
 
     new Setting(containerEl).setName('Sunday').setHeading();
     new Setting(containerEl)

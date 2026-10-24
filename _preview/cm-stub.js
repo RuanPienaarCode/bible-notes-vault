@@ -3,4 +3,5 @@
 export const ViewPlugin = { fromClass: () => ({}) };
 export const Decoration = { mark: () => ({}), none: {} };
 export const EditorView = { domEventHandlers: () => ({}) };
+export const StateEffect = { define: () => ({ of: () => ({}) }) };
 export class RangeSetBuilder { add() {} finish() { return {}; } }

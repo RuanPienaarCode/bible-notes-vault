@@ -13,7 +13,7 @@ const { VIEW_TYPE, DEFAULT_SETTINGS, KINDS, PRAYER } = require('./constants');
 const { makeStore } = require('./store');
 const { HomeView } = require('./view');
 const { Covers } = require('./cover');
-const { makePostProcessor, makeEditorExtension } = require('./chips');
+const { makePostProcessor, makeEditorExtension, refreshChipViews } = require('./chips');
 const { closePopover } = require('./popover');
 const { AdoptModal } = require('./adopt-modal');
 const { PrayerModal } = require('./prayer-modal');
@@ -73,8 +73,11 @@ class BibleNotesPlugin extends Plugin {
     ws.onLayoutReady(async () => {
       await this.store.loadAll();
       for (const ref of this.store.watch()) this.registerEvent(ref);
-      this.register(this.store.subscribe(() => this.covers.refreshAll()));
+      /* Whether a note gets chips depends on the store (a Bible Notes note, or
+         one just adopted), which fills only now: tell the open editors. */
+      this.register(this.store.subscribe(() => { this.covers.refreshAll(); this.refreshChips(); }));
       this.covers.refreshAll();
+      this.refreshChips();
       this.store.writeTemplatesOnce().catch(e => console.error('bible-notes templates', e));
     });
 
@@ -93,6 +96,13 @@ class BibleNotesPlugin extends Plugin {
   activeNote() {
     const view = this.app.workspace.getActiveViewOfType(MarkdownView);
     return view && view.file ? this.store.notes.get(view.file.path) || null : null;
+  }
+
+  /* Re-decide the passage chips in every open note (Live Preview and reading
+     view): the store changed what counts as a Bible Notes note, or the
+     "chips in every note" setting was toggled. */
+  refreshChips() {
+    refreshChipViews(this);
   }
 
   /* Redraw every open Home (its tiles changed). */

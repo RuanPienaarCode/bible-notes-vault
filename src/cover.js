@@ -71,6 +71,7 @@ class Covers {
       if (!c) continue;
       c.classList.remove('bn-note', 'bn-raw');
       c.querySelectorAll('.bn-cover').forEach(removeCover);
+      remeasure(leaf.view);
     }
   }
 
@@ -81,6 +82,7 @@ class Covers {
     if (!note) {
       c.classList.remove('bn-note', 'bn-raw');
       c.querySelectorAll('.bn-cover').forEach(removeCover);
+      remeasure(view);
       return;
     }
     c.classList.add('bn-note');
@@ -96,11 +98,21 @@ class Covers {
     if (!cover) {
       cover = el(null, 'div', 'bn-cover');
       shield(cover);
+      /* The band sits in .cm-sizer, outside what CodeMirror observes, so ANY
+         change to its height (a pill turning into an input and wrapping, a
+         passage list growing, the font swapping in) must ask the editor to
+         measure again. One observer on the band covers them all. */
       parent.insertBefore(cover, before && before.parentNode === parent ? before : parent.firstChild);
+      /* The observer of the window the band lives in (a pop-out has its own). */
+      const RO = (parent.ownerDocument.defaultView || window).ResizeObserver;
+      if (typeof RO !== 'undefined') {
+        cover._bnBand = new RO(() => remeasure(cover._bnView));
+        cover._bnBand.observe(cover);
+      }
       /* A change that arrived while someone was typing in the band is drawn
          once focus leaves it. */
       cover.addEventListener('focusout', () => setTimeout(() => {
-        if (cover._bnStale && cover.isConnected && !cover.contains(document.activeElement)) {
+        if (cover._bnStale && cover.isConnected && !cover.contains(cover.ownerDocument.activeElement)) {
           cover._bnStale = false;
           this.refresh(cover._bnView);
         }
@@ -108,7 +120,7 @@ class Covers {
     }
     cover._bnView = view;
     /* Never redraw under someone typing in the band. */
-    if (cover.contains(document.activeElement) && cover.dataset.path === note.path) { cover._bnStale = true; return; }
+    if (cover.contains(cover.ownerDocument.activeElement) && cover.dataset.path === note.path) { cover._bnStale = true; return; }
     const sig = signature(note, this.store.index, this.raw.has(note.path), this.expanded.has(note.path), D.todayISO());
     if (cover.dataset.sig === sig && cover.dataset.path === note.path) return;
     cover.dataset.sig = sig;
@@ -175,11 +187,15 @@ class Covers {
       if (next !== before) remeasure(view);
     };
     title.addEventListener('input', grow);
-    if (typeof ResizeObserver !== 'undefined') {
+    const win = title.ownerDocument.defaultView || window;
+    if (typeof win.ResizeObserver !== 'undefined') {
       let width = 0;
-      cover._bnRO = new ResizeObserver(entries => {
+      /* Grow on the next frame, not inside the callback: growing resizes
+         the band, which its own observer watches, and a size change made
+         during delivery is reported as a ResizeObserver loop. */
+      cover._bnRO = new win.ResizeObserver(entries => {
         const w = Math.round(entries[0].contentRect.width);
-        if (w !== width) { width = w; grow(); }
+        if (w !== width) { width = w; win.requestAnimationFrame(grow); }
       });
       cover._bnRO.observe(title);
     }
@@ -209,11 +225,11 @@ class Covers {
         if (tries++ > 20) { plugin.focusTitleFor = null; return; }
         /* Obsidian focuses the editor itself as a note opens; only after
            that first moment does focus in the text mean someone is typing. */
-        const a = document.activeElement;
+        const a = title.ownerDocument.activeElement;
         if (tries > 6 && a && a.closest && a.closest('.cm-content')) { plugin.focusTitleFor = null; return; }
         if (title.offsetParent !== null) {
           title.focus();
-          if (document.activeElement === title) { title.select(); plugin.focusTitleFor = null; return; }
+          if (title.ownerDocument.activeElement === title) { title.select(); plugin.focusTitleFor = null; return; }
         }
         setTimeout(tick, 50);
       };
@@ -344,7 +360,7 @@ class Covers {
         done = true;
         const next = input.value.trim();
         /* Let go of focus first: the band won't redraw while it holds it. */
-        if (document.activeElement === input) input.blur();
+        if (input.ownerDocument.activeElement === input) input.blur();
         if (!save || next === value) { show(); return; }
         input.disabled = true;
         await store.setProps(note.path, { [key]: toValue(store, key, next) });
@@ -363,7 +379,7 @@ class Covers {
         input.addEventListener('change', () => { if (input.value) commit(true); });
         input.addEventListener('blur', () => {
           if (input.value && input.value !== value) commit(true);
-          else setTimeout(() => { if (!done && document.activeElement !== input) commit(false); }, 800);
+          else setTimeout(() => { if (!done && input.ownerDocument.activeElement !== input) commit(false); }, 800);
         });
       } else {
         input.addEventListener('blur', () => commit(true));
@@ -421,6 +437,7 @@ function remeasure(view) {
 
 function removeCover(node) {
   if (node._bnRO) node._bnRO.disconnect();
+  if (node._bnBand) node._bnBand.disconnect();
   node.remove();
 }
 

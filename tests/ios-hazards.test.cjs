@@ -82,7 +82,7 @@ if (fs.existsSync(bundlePath)) {
     ViewPlugin: { fromClass: () => ({}) }, Decoration: { mark: () => ({ range: () => ({}) }), set: () => ({}), none: {} },
     EditorView: Object.assign(Base, { domEventHandlers: () => ({}) }), WidgetType: Base,
   };
-  const cmState = { RangeSetBuilder: class { add() {} finish() { return {}; } } };
+  const cmState = { RangeSetBuilder: class { add() {} finish() { return {}; } }, StateEffect: { define: () => ({ of: () => ({}), is: () => false }) } };
   const origLoad = Module._load;
   Module._load = function (request, ...rest) {
     if (request === 'obsidian') return obsidian;

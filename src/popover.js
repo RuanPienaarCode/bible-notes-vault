@@ -25,7 +25,11 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   closePopover();
   const store = plugin.store;
   const today = D.todayISO();
-  const pop = el(document.body, 'div', 'bn-popover');
+  /* The card belongs to the window the chip is in: a note in a pop-out has
+     its own document, viewport and events. */
+  const doc = anchor.ownerDocument;
+  const win = doc.defaultView || window;
+  const pop = el(doc.body, 'div', 'bn-popover');
   pop.setAttribute('role', 'dialog');
   pop.setAttribute('aria-label', ref.label);
 
@@ -70,10 +74,10 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   /* Below the chip, or above it when there is no room; never off screen.
      The VISIBLE viewport, so on a phone it never hides behind the keyboard. */
   const rect = anchor.getBoundingClientRect();
-  const vv = window.visualViewport;
-  const vw = window.innerWidth;
+  const vv = win.visualViewport;
+  const vw = win.innerWidth;
   const top0 = vv ? vv.offsetTop : 0;
-  const vh = vv ? vv.height + vv.offsetTop : window.innerHeight;
+  const vh = vv ? vv.height + vv.offsetTop : win.innerHeight;
   /* The computed box goes in as CSS variables; styles.css places it. */
   const w = Math.min(WIDTH, vw - 16);
   pop.style.setProperty('--bn-pop-w', `${w}px`);
@@ -84,37 +88,37 @@ function showPassagePopover(plugin, ref, anchor, sourcePath) {
   /* Take focus only when the chip was opened from the keyboard. From a tap
      in the editor, moving focus would drop the phone's keyboard and lose the
      writer's place. */
-  if (document.activeElement === anchor) go.focus({ preventScroll: true });
+  if (doc.activeElement === anchor) go.focus({ preventScroll: true });
 
   /* The keyboard appearing or going away resizes and scrolls the page; that
      must not close the card. Only a real width change (rotation) does, and
      nothing counts in the first moment after opening. */
   const opened = Date.now();
   const settled = () => Date.now() - opened > 400;
-  const width0 = window.innerWidth;
+  const width0 = win.innerWidth;
   const onDown = e => { if (!pop.contains(e.target) && e.target !== anchor) closePopover(); };
   const onKey = e => { if (e.key === 'Escape') { e.preventDefault(); closePopover(); anchor.focus && anchor.focus(); } };
   const onMove = e => {
     if (!settled() || pop.contains(e.target)) return;
     const t0 = e.target;
-    if (t0 === document || (t0 && t0.contains && t0.contains(anchor))) closePopover();
+    if (t0 === doc || (t0 && t0.contains && t0.contains(anchor))) closePopover();
   };
-  const onResize = () => { if (settled() && window.innerWidth !== width0) closePopover(); };
+  const onResize = () => { if (settled() && win.innerWidth !== width0) closePopover(); };
   /* Listeners go on after this tap finishes, or it would close at once. */
-  const t = setTimeout(() => {
-    document.addEventListener('pointerdown', onDown, true);
-    document.addEventListener('scroll', onMove, true);
+  const t = win.setTimeout(() => {
+    doc.addEventListener('pointerdown', onDown, true);
+    doc.addEventListener('scroll', onMove, true);
   }, 0);
-  document.addEventListener('keydown', onKey, true);
-  window.addEventListener('resize', onResize);
+  doc.addEventListener('keydown', onKey, true);
+  win.addEventListener('resize', onResize);
   current = {
     node: pop,
     cleanup() {
-      clearTimeout(t);
-      document.removeEventListener('pointerdown', onDown, true);
-      document.removeEventListener('scroll', onMove, true);
-      document.removeEventListener('keydown', onKey, true);
-      window.removeEventListener('resize', onResize);
+      win.clearTimeout(t);
+      doc.removeEventListener('pointerdown', onDown, true);
+      doc.removeEventListener('scroll', onMove, true);
+      doc.removeEventListener('keydown', onKey, true);
+      win.removeEventListener('resize', onResize);
     },
   };
   return pop;
